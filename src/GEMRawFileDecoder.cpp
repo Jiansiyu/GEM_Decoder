@@ -205,36 +205,54 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestFileHeader(FILE *fil
 	return GEMInfor_Buffer_Input;
 };
 
+// file version 5 decoder, to b improved
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input) {
+
+	// globle control variables
+	int Run_Ctrl_stateflg=0;
+
+
+
+	// no  sure what is this used for
+	uint16_t Data_ADCFifo_index=0;
+	int Data_CommonBase = 0;
+	int Data_DCount=0;
+
 	printf("\n\n********DECODE RAW DATA********\n\n");
 	printf("[RUN INFOR]:: %s Prepare decoding the raw data, %d MPD fund in total\n",__FUNCTION__,GEMInfor_Buffer_Input.size());
 	vector<GEMInfor>::iterator Iter_GEMMPD=GEMInfor_Buffer_Input.begin();
 	for(Iter_GEMMPD; Iter_GEMMPD < GEMInfor_Buffer_Input.end();Iter_GEMMPD++) {
 
 	};
-    uint32_t ievt=0;
-	while(feof(file_input)==0)   {    // while the file did not reach the end
+
+
+	uint32_t Data_eventsID_temp=0;
+    uint32_t Data_PrevEventsID_temp=0;   // last events ID that just finished
+
+	while(feof(file_input)==0)   {       // while the file did not reach the end
 
 		uint32_t Data_temp;
 		fread(&Data_temp,sizeof(uint32_t),1,file_input);
-		printf("0x%x\n",Data_temp);
+		//printf("0x%x\n",Data_temp);
 
 		// End of Evnts
 		if((Data_temp&0xF0000000)== 0xE0000000) {
-			ievt = Data_temp&0xFFFFFFF;
+
+			Data_eventsID_temp = Data_temp&0xFFFFFFF;
+			Data_PrevEventsID_temp= Data_eventsID_temp;      // The end of one Events, this is the Evnts ID that Just finished
+			printf("[Test Variables]:: End of Events=%d\n", Data_eventsID_temp);
 
 		};
 
 		// vme Event header
 		if((Data_temp&0xF0000000)== 0x10000000) {
-			uint32_t Data_eventsID_temp= Data_temp&0xFFFFFFF;
+			Data_eventsID_temp= Data_temp&0xFFFFFFF;
 			continue;
 		}
 
 		// User infor, if this is user block
-
 		if((Data_temp&0xF0000000)== 0xD0000000) {
-			uint32_t Data_eventsID_temp= Data_temp&0xFFFFFFF;
+			Data_eventsID_temp= Data_temp&0xFFFFFFF;
 			uint32_t Data_UserWordCount, *Data_UserData;
 			fread(&Data_UserWordCount,sizeof(uint32_t),1,file_input);   // read how large is the user data is
 			Data_UserData= new uint32_t[Data_UserWordCount];
@@ -242,7 +260,109 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 			delete Data_UserData;
 			continue;
 		}
-    exit(0); // for test usage
+		// trigger Event Header
+		if((Data_temp&0xF0000000)== 0x20000000) {
+			Data_eventsID_temp=Data_temp&0xFFFFFFF;
+
+			uint32_t Data_triggerpatttern;
+			if(feof(file_input)==0) fread(&Data_triggerpatttern,sizeof(uint32_t),1,file_input);
+
+			printf("[RUN INFOR]:: eventID=%d, trigger pattern =%d \n",Data_eventsID_temp, (int)Data_triggerpatttern);
+			continue;
+		}
+
+		// APV Events header
+		if((Data_temp&0xF0000000)== 0xA0000000) {
+			Data_eventsID_temp=Data_temp&0xFFFFFFF;
+			printf("[RUN INFOR]:: eventID=%d\n",Data_eventsID_temp);
+
+			Run_Ctrl_stateflg=0;  // reset when comes to the next events
+
+			int Run_Ctrl_EndApvEndOfBlock=0;
+			do {
+				uint32_t Data_temp;
+				fread(&Data_temp,sizeof(uint32_t),1,file_input);
+				printf("[Test Variables]:: %s  0x%x\n",__FUNCTION__, Data_temp);
+
+				int File_HeaderID_temp=(Data_temp>>19)&0x3;
+				printf("[Test Variables]:: File_HeaderID_temp= %d\n",File_HeaderID_temp);
+				switch(File_HeaderID_temp) {
+
+				// APVsampleHeader
+				case 0x0: {
+					if(Run_Ctrl_stateflg!=0) {
+						printf("[ERROR]:: %s wrong control flag, it should be 0, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
+					}
+					Run_Ctrl_EndApvEndOfBlock = Data_temp & 0x40000; // end of APV block
+					if(Run_Ctrl_EndApvEndOfBlock){      // if reach the end of APV events block
+						break;
+					}
+					Run_Ctrl_stateflg=1;
+
+					uint32_t Data_FrameHeader=(Data_temp>>4)& 0xFFF;   // varify the frame header
+					if(((Data_FrameHeader&0xE00)!= 0xE00)||((Data_FrameHeader&0x1)==0)) {
+						printf("[ERROR]::  %s  Frame header Error\n",__FUNCTION__);
+					}
+					Data_ADCFifo_index = Data_temp&0xf;
+					Data_CommonBase    = (Data_temp >> 6) & 0x800;
+					//printf("******** %d ***************\n",Data_temp&0xF);
+					printf("[Test Variables]:: %s APV infors=> EventsID=%d, IAPV=%d\n\n",__FUNCTION__,Data_PrevEventsID_temp, Data_ADCFifo_index);
+					Data_DCount=0;
+					break;
+				}
+				// APV sample Data
+				case 0x1: {
+					if((Run_Ctrl_stateflg<1)||(Run_Ctrl_stateflg>2)){
+						printf("[ERROR]:: %s wrong control flag, it should be 1/2, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
+					}
+					Run_Ctrl_stateflg=2;
+					printf("[Test Variables]:: Count=%d, trips=%d, ADC= %d \n", Data_DCount++,(Data_temp>>12)&0x7f, Data_temp& 0xFFF);
+					break;
+				}
+				// APVSampleTrailer
+				case 0x2: {
+					if((Run_Ctrl_stateflg<1)||(Run_Ctrl_stateflg>2)){
+						printf("[ERROR]:: %s wrong control flag, it should be 1/2, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
+					}
+					Run_Ctrl_stateflg = 3;
+					uint32_t Data_MPD_slot_index=(Data_temp >> 12)& 0x1F;
+					uint32_t Data_Frame_Trailer=Data_temp&& 0xfff;
+					printf("[Test Variables]:: MPD slot_index= %d Frame_trailer=%d \n", Data_MPD_slot_index,Data_Frame_Trailer);
+					break;
+				}
+
+				//APV  Sample End Block
+				case 0x3: {
+					if(Run_Ctrl_stateflg!=0) {
+						printf("[ERROR]:: %s wrong control flag, it should be 0, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
+					 }
+					Run_Ctrl_stateflg=0;
+					break;
+				}
+				default:
+					printf("[ERROR]:: Error in decoding raw data\n");
+
+				 }
+			}
+			while((feof(file_input))&&(Run_Ctrl_EndApvEndOfBlock==0));
+		};   //APV block Ended all
+
+		// MAROC block
+		if((Data_temp& 0xF0000000) == 0xB0000000) {
+			printf("[Run Infor]:: MAROC Block decoder\n");
+			Data_eventsID_temp= Data_temp & 0xFFFFFFF;
+			uint32_t Data_MaRocWordCount=0;
+			fread(&Data_MaRocWordCount,sizeof(uint32_t),1,file_input);
+			int Data_WordCount=Data_MaRocWordCount & 0xFFFF;
+			int Data_DeviceID=(Data_MaRocWordCount>>16)&0xFFF;
+			printf("[Run Infor]:: MaRoc Block of CB %d, word count=%d\n", Data_DeviceID,Data_WordCount);
+			unsigned char *Data_Maroc;
+			Data_Maroc=(unsigned char *)malloc(4*Data_WordCount*sizeof(char));
+			fread(&Data_Maroc,sizeof(char),4*Data_MaRocWordCount,file_input);
+			continue;
+		}
+
+    //exit(0); // for test usage
 	}
 
 };
