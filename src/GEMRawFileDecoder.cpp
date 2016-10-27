@@ -246,12 +246,16 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 		// vme Event header
 		if((Data_temp&0xF0000000)== 0x10000000) {
+			printf("VME HRADER\n");
 			Data_eventsID_temp= Data_temp&0xFFFFFFF;
 			continue;
 		}
 
 		// User infor, if this is user block
 		if((Data_temp&0xF0000000)== 0xD0000000) {
+
+			printf("USER BLOCK\n");
+
 			Data_eventsID_temp= Data_temp&0xFFFFFFF;
 			uint32_t Data_UserWordCount, *Data_UserData;
 			fread(&Data_UserWordCount,sizeof(uint32_t),1,file_input);   // read how large is the user data is
@@ -263,32 +267,34 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 		// trigger Event Header
 		if((Data_temp&0xF0000000)== 0x20000000) {
 			Data_eventsID_temp=Data_temp&0xFFFFFFF;
-
+			printf("TRIGGER BLOCK\n");
 			uint32_t Data_triggerpatttern;
 			if(feof(file_input)==0) fread(&Data_triggerpatttern,sizeof(uint32_t),1,file_input);
 
-			printf("[RUN INFOR]:: eventID=%d, trigger pattern =%d \n",Data_eventsID_temp, (int)Data_triggerpatttern);
+			printf("[RUN INFOR]:: eventID=%d, trigger pattern =%d \n\n",Data_eventsID_temp, (int)Data_triggerpatttern);
 			continue;
 		}
 
 		// APV Events header
 		if((Data_temp&0xF0000000)== 0xA0000000) {
 			Data_eventsID_temp=Data_temp&0xFFFFFFF;
+			printf("\nAPV EVENT BLOCK\n");
 			printf("[RUN INFOR]:: eventID=%d\n",Data_eventsID_temp);
 
 			Run_Ctrl_stateflg=0;  // reset when comes to the next events
 
 			int Run_Ctrl_EndApvEndOfBlock=0;
+			map<int,int> Data_APV_StrADC;
 			do {
 				uint32_t Data_temp;
 				fread(&Data_temp,sizeof(uint32_t),1,file_input);
-				printf("[Test Variables]:: %s  0x%x\n",__FUNCTION__, Data_temp);
+				//printf("[Test Variables]:: %s ** 0x%x\n",__FUNCTION__, Data_temp);
 
 				int File_HeaderID_temp=(Data_temp>>19)&0x3;
-				printf("[Test Variables]:: File_HeaderID_temp= %d\n",File_HeaderID_temp);
+				//printf("[Test Variables]:: File_HeaderID_temp= %d\n",File_HeaderID_temp);
 				switch(File_HeaderID_temp) {
 
-				// APVsampleHeader
+				// APVsampleHeader APVID
 				case 0x0: {
 					if(Run_Ctrl_stateflg!=0) {
 						printf("[ERROR]:: %s wrong control flag, it should be 0, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
@@ -316,7 +322,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 						printf("[ERROR]:: %s wrong control flag, it should be 1/2, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
 					}
 					Run_Ctrl_stateflg=2;
-					printf("[Test Variables]:: Count=%d, trips=%d, ADC= %d \n", Data_DCount++,(Data_temp>>12)&0x7f, Data_temp& 0xFFF);
+					//printf("[Test Variables]::EventsID=%d, Count=%d, trips=%d, ADC= %d \n",Data_eventsID_temp, Data_DCount++,(Data_temp>>12)&0x7f, Data_temp& 0xFFF);
 					break;
 				}
 				// APVSampleTrailer
@@ -333,7 +339,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 				//APV  Sample End Block
 				case 0x3: {
-					if(Run_Ctrl_stateflg!=0) {
+					if(Run_Ctrl_stateflg!=3) {
 						printf("[ERROR]:: %s wrong control flag, it should be 0, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
 					 }
 					Run_Ctrl_stateflg=0;
@@ -344,7 +350,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 				 }
 			}
-			while((feof(file_input))&&(Run_Ctrl_EndApvEndOfBlock==0));
+			while((feof(file_input)==0)&&(Run_Ctrl_EndApvEndOfBlock==0));
 		};   //APV block Ended all
 
 		// MAROC block

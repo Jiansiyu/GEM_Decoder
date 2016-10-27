@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 		GEMDecoderIuputHandler->GEMInputHandler_TestFunctions();
 
 		//test functions
-		GEMRawFileDecoder *GEMRawFileDecoder_TEST=new GEMRawFileDecoder("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/Debug/test_2458.dat");
+		GEMRawFileDecoder *GEMRawFileDecoder_TEST=new GEMRawFileDecoder("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/Debug/test_0888.dat");
 		GEMRawFileDecoder_TEST->GEMRawFileDecoder_TestFunction();
 
 		/*
