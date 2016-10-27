@@ -370,7 +370,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
     //exit(0); // for test usage
 	}
-
+return GEMInfor_Buffer_Input;
 };
 
 // test functions
