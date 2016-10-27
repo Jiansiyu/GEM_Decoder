@@ -31,8 +31,8 @@ public:
 	int GEMAPVinfor_fMode;
 
 	//APV raw strips data
-	map<int,map<int,int> > GEMAPVinfor_RawData;
-	//n time samples -> 128 channels -> pair<strips id, ADC value>
+	map<int, map<int,map<int,int> > > GEMAPVinfor_RawData;
+	//Events ID, 6 time samples -> 128 channels -> pair<strips id, ADC value>
 
 //public functions
 public:
@@ -53,7 +53,7 @@ public:
 
 // public variables
 public:
-	int GEMInfor_fSlot;
+	int GEMInfor_fSlot;			// MPDiD actually
 	int GEMInfor_fNumTrigger;
 	int GEMInfor_fCalibLatency;
 	int GEMInfor_fClockPhase[2];

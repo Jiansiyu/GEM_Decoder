@@ -208,6 +208,42 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestFileHeader(FILE *fil
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input) {
 	printf("\n\n********DECODE RAW DATA********\n\n");
 	printf("[RUN INFOR]:: %s Prepare decoding the raw data, %d MPD fund in total\n",__FUNCTION__,GEMInfor_Buffer_Input.size());
+	vector<GEMInfor>::iterator Iter_GEMMPD=GEMInfor_Buffer_Input.begin();
+	for(Iter_GEMMPD; Iter_GEMMPD < GEMInfor_Buffer_Input.end();Iter_GEMMPD++) {
+
+	};
+    uint32_t ievt=0;
+	while(feof(file_input)==0)   {    // while the file did not reach the end
+
+		uint32_t Data_temp;
+		fread(&Data_temp,sizeof(uint32_t),1,file_input);
+		printf("0x%x\n",Data_temp);
+
+		// End of Evnts
+		if((Data_temp&0xF0000000)== 0xE0000000) {
+			ievt = Data_temp&0xFFFFFFF;
+
+		};
+
+		// vme Event header
+		if((Data_temp&0xF0000000)== 0x10000000) {
+			uint32_t Data_eventsID_temp= Data_temp&0xFFFFFFF;
+			continue;
+		}
+
+		// User infor, if this is user block
+
+		if((Data_temp&0xF0000000)== 0xD0000000) {
+			uint32_t Data_eventsID_temp= Data_temp&0xFFFFFFF;
+			uint32_t Data_UserWordCount, *Data_UserData;
+			fread(&Data_UserWordCount,sizeof(uint32_t),1,file_input);   // read how large is the user data is
+			Data_UserData= new uint32_t[Data_UserWordCount];
+			fread(&Data_UserData,sizeof(uint32_t),Data_UserWordCount,file_input);   // read the user infor block
+			delete Data_UserData;
+			continue;
+		}
+    exit(0); // for test usage
+	}
 
 };
 
