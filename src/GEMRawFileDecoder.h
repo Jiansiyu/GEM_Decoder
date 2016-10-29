@@ -42,9 +42,15 @@ public:
 public:
     void GEMRawFileDecoder_TestFunction();
 
+// private variables
 private:
 	TString  GEMRawFileDecoder_Raw_File;
 	int    GEMRawFileDecoder_EventsIndex=0; // buffer the current Evnts ID, used for the concurrent process
+// private functions
+private:
+	vector<GEMInfor> GEMRawFileDecoder_BufferSave(std::vector<GEMInfor> GEMInfor_Buffer_Input,int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input); // save the individual data informations to the
+
+	int GEMRawFileDecoder_DataCheck();                // check the number of Datas, varify it is matching the configuration
 
 // files related IDs
 private:

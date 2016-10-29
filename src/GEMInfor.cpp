@@ -56,8 +56,13 @@ int GEMInfor::GEMInfor_clone(GEMInfor *GEMInfor_input) {
 	this->GEMInfor_fLevelOne      = GEMInfor_input->GEMInfor_fLevelOne;
 	this->GEMInfor_fApvCount      = GEMInfor_input->GEMInfor_fApvCount;
 
+	this->GEMInfor_fAPVIndex      = GEMInfor_input->GEMInfor_fAPVIndex;
+	this->GEMInfor_fAdcGain       = GEMInfor_input->GEMInfor_fAdcGain;
+	this->GEM_APV_Attached        = GEMInfor_input->GEM_APV_Attached;
+
 	return 1;
 }
+
 
 // pass the local variables to the input class
 int GEMInfor::GEMInfor_clone(GEMInfor &GEMInfor_input) {
@@ -73,6 +78,12 @@ int GEMInfor::GEMInfor_clone(GEMInfor &GEMInfor_input) {
 	GEMInfor_input.GEMInfor_fLevelZero       = this->GEMInfor_fLevelZero;
 	GEMInfor_input.GEMInfor_fLevelOne        = this->GEMInfor_fLevelOne;
 	GEMInfor_input.GEMInfor_fApvCount        = this->GEMInfor_fApvCount;
+
+	GEMInfor_input.GEMInfor_fAPVIndex        = this->GEMInfor_fAPVIndex;
+	GEMInfor_input.GEMInfor_fAdcGain         = this->GEMInfor_fAdcGain;
+	GEMInfor_input.GEM_APV_Attached          = this->GEM_APV_Attached;
+
+
 	return 1;
 
 }
@@ -85,3 +96,17 @@ GEMAPVinfor::GEMAPVinfor() {
 GEMAPVinfor::~GEMAPVinfor() {
 
 };
+
+// clone this information to the input  varibales
+int GEMAPVinfor::GEMAPVinfor_clone(GEMAPVinfor &GEMAPVinfor_Input) {
+
+	GEMAPVinfor_Input.GEMAPVinfor_fI2C        =  this->GEMAPVinfor_fI2C;
+	GEMAPVinfor_Input.GEMAPVinfor_fADC        =  this->GEMAPVinfor_fADC;
+	GEMAPVinfor_Input.GEMAPVinfor_fNumSample  =  this->GEMAPVinfor_fNumSample;
+	GEMAPVinfor_Input.GEMAPVinfor_fLatency    =  this->GEMAPVinfor_fLatency;
+	GEMAPVinfor_Input.GEMAPVinfor_fMode       =  this->GEMAPVinfor_fMode;
+	if((this->GEMAPVinfor_RawData).size()!=0) {
+		GEMAPVinfor_Input.GEMAPVinfor_RawData=this->GEMAPVinfor_RawData;
+	}
+	return 1;
+}

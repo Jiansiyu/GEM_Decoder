@@ -37,6 +37,7 @@ public:
 //public functions
 public:
 	int GEMAPVinfor_Initialize();           //clear all the data and set all the variables to -1
+	int GEMAPVinfor_clone(GEMAPVinfor &GEMAPVinfor_Input);
 
 // test functions
 public:
