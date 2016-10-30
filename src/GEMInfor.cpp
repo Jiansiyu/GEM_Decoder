@@ -90,7 +90,16 @@ int GEMInfor::GEMInfor_clone(GEMInfor &GEMInfor_input) {
 
 
 GEMAPVinfor::GEMAPVinfor() {
+	GEMAPVinfor_fI2C=-1;
+	GEMAPVinfor_fADC=-1;
 
+		//APV configuration variables
+	GEMAPVinfor_fNumSample=-1;         // number of time samples per trigger
+	GEMAPVinfor_fLatency=-1;
+	GEMAPVinfor_fMode=-1;
+
+		//APV raw strips data
+	GEMAPVinfor_RawData.clear();
 };
 
 GEMAPVinfor::~GEMAPVinfor() {
