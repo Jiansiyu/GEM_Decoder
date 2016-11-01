@@ -9,9 +9,13 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <fstream>
+#include <vector>
+
 // ROOT functions
 #include <TString.h>
-#include <vector>
+#include <TTree.h>
+
 // user defined functions
 #include "GEMRawFileDecoder.h"
 #include "GEMInfor.h"           // GEM infor class
@@ -407,7 +411,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 							printf("\n\n\n\n[Test Variables]::  *** Run_Ctrl_TimeSample_Index= %d, size=%d *****\n\n\n\n ", Run_Ctrl_TimeSample_Index-1, Data_APV_TimeSp_StrADC_temp.size());
 
-							GEMInfor_Buffer_return=GEMRawFileDecoder_BufferSave(GEMInfor_Buffer_return,Run_Ctrl_Current_EvntID,Run_Ctrl_Current_MPDID,Run_Ctrl_Current_APVID,Data_APV_TimeSp_StrADC_temp);
+							//GEMInfor_Buffer_return=GEMRawFileDecoder_BufferSave(GEMInfor_Buffer_return,Run_Ctrl_Current_EvntID,Run_Ctrl_Current_MPDID,Run_Ctrl_Current_APVID,Data_APV_TimeSp_StrADC_temp);
 							Data_APV_TimeSp_StrADC_temp.clear();				  // finish all the time sample for one APV
 
 							Run_Ctrl_Current_APVID  = Data_APVADC_index_temp;     //
@@ -462,6 +466,9 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 return GEMInfor_Buffer_return;
 };
 
+// save the individual data in the tree files
+//int GEMRawFileDecoder::GEMRawFileDecoder_BufferSave(){
+//}
 // save the individual data informations to the data buffer
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_BufferSave(std::vector<GEMInfor> GEMInfor_Buffer_Input,int EventID_index_Input,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input) {
 

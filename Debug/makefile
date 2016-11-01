@@ -44,7 +44,7 @@ all: GEM_Analysis
 GEM_Analysis: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ $(OBJS) $(USER_OBJS) $(LIBS) -L"/home/newdriver/Source/ROOT_CERN/root_v5.34.36/lib" -pthread -lm -ldl -Xlinker `/home/newdriver/Source/ROOT_CERN/root_v5.34.36/bin/root-config --libs --glibs --cflags --ldflags --auxlibs --auxcflags` -o "GEM_Analysis"
+	g++ $(OBJS) $(USER_OBJS) $(LIBS) -L"/home/newdriver/Source/ROOT_CERN/root_v5.34.36/lib" -pthread -lm -ldl -Xlinker `$(ROOTSYS)/bin/root-config --libs --glibs --cflags --ldflags --auxlibs --auxcflags` -o "GEM_Analysis"
 	@echo 'Finished building target: $@'
 	@echo ' '
 
