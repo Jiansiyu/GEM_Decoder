@@ -32,6 +32,21 @@ GEMRawFileDecoder::GEMRawFileDecoder(TString Raw_File){
 	printf("[Test Infor]:: %s\n",Raw_File.Data());
 };
 
+//
+GEMRawFileDecoder::GEMRawFileDecoder(TString Raw_File, TTree &APVTree) {
+	GEMRawFileDecoder_Raw_File = Raw_File;
+	GEMAPV_tree = &APVTree;
+
+	GEMAPV_tree->Branch("detID", &GEMR_ApvStrData.detID, "detID/I");
+	GEMAPV_tree->Branch("MPDID", &GEMR_ApvStrData.MPDID, "MPDID/I");
+	GEMAPV_tree->Branch("APVID", &GEMR_ApvStrData.APVID, "APVID/I");
+	GEMAPV_tree->Branch("SampleID", &GEMR_ApvStrData.SampeID, "SampeID/I");
+	GEMAPV_tree->Branch("StripADC", GEMR_ApvStrData.StripADC, "StripADC[KNSTRIPS]/I");
+
+	printf("[Test Infor]:: %s\n",Raw_File.Data());
+
+};
+
 GEMRawFileDecoder::~GEMRawFileDecoder() {
 	// TODO Auto-generated destructor stub
 }
@@ -523,6 +538,25 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_BufferSave(std::vector<GEM
 	}
     //printf("*********************%d\n\n",GEMInfor_Buffer_return.size());
 	return GEMInfor_Buffer_return;
+}
+
+//
+TTree GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input) {
+
+	map<int,map<int,int>>::iterator Iter_Tsamples=Tsample_StrADC_Input.begin();
+	unsigned int TSample_counter_temp=0;
+	while (Iter_Tsamples!=Tsample_StrADC_Input.end()){
+		TSample_counter_temp++;
+		map<int,int>::iterator Iter_NStrips = (Iter_Tsamples->second).begin();
+		while (Iter_NStrips != (Iter_Tsamples->second).end()) {
+
+			Iter_NStrips++;
+		}
+		Iter_Tsamples++;
+	}
+
+
+
 }
 
 // file format check function, mainly used for test

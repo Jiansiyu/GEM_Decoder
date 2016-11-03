@@ -14,17 +14,24 @@
 
 //CERN ROOT functions
 #include <TString.h>
+#include <TTree.h>
 //#include <TMath.h>
 //#include <TROOT.h>
+
 //user defined functions
 #include "GEMInfor.h"       // GEM infor class
 
+// global configuration files
+#include "GEMConfig.h"
+
 using namespace std;
+
 
 class GEMRawFileDecoder {
 public:
 	GEMRawFileDecoder();
 	GEMRawFileDecoder(TString Raw_File);   // load the raw files
+	GEMRawFileDecoder(TString Raw_File, TTree &APVTree);
 
 	virtual ~GEMRawFileDecoder();
 
@@ -35,7 +42,7 @@ public://
 
 //report functions
 public:
-    int GEMRawFileDecoder_TreeSave();    // generate the tree files
+    TTree GEMRawFileDecoder_TreeSave(int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input);    // generate the tree files
 
 
 // test functions
@@ -46,6 +53,11 @@ public:
 private:
 	TString  GEMRawFileDecoder_Raw_File;
 	int    GEMRawFileDecoder_EventsIndex=0; // buffer the current Evnts ID, used for the concurrent process
+
+	// used for return the value
+
+	TTree *GEMAPV_tree;					// used for buffer the data
+	APV_DataStruct GEMR_ApvStrData;     // used for save the data in the tree file
 // private functions
 private:
 	vector<GEMInfor> GEMRawFileDecoder_BufferSave(std::vector<GEMInfor> GEMInfor_Buffer_Input,int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input); // save the individual data informations to the
@@ -58,6 +70,7 @@ private:
 	const uint16_t BINARYAPV_ID  = ((uint16_t) 0xE59F);
 	const uint16_t BINARYVME_ID  = ((uint16_t) 0xE590);
 	const uint16_t BINARYTRG_ID  = ((uint16_t) 0xE591);
+
 };
 
 #endif /* GEMRAWFILEDECODER_H_ */
