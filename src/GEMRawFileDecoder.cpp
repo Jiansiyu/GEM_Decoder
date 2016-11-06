@@ -483,9 +483,6 @@ return GEMInfor_Buffer_return;
 };
 
 
-// save the individual data in the tree files
-//int GEMRawFileDecoder::GEMRawFileDecoder_BufferSave(){
-//}
 // save the individual data informations to the data buffer
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_BufferSave(std::vector<GEMInfor> GEMInfor_Buffer_Input,int EventID_index_Input,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input) {
 
@@ -538,14 +535,13 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_BufferSave(std::vector<GEM
 			GEMInfor_Buffer_return.push_back(*Iter_MPD);
 		}
 	}
-    //printf("*********************%d\n\n",GEMInfor_Buffer_return.size());
 	return GEMInfor_Buffer_return;
 }
 
 //
 void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input) {
-printf("\n\n\n");
-			printf("save function\n");
+	printf("\n\n\n");
+	printf("save function\n");
 	GEMR_ApvStrData.EventID=EventID_index_temp;
 	GEMR_ApvStrData.MPDID=MPD_Index_Input;
 	GEMR_ApvStrData.APVID=APVADC_Index_Input;
