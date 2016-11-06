@@ -424,7 +424,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 								printf("[WORNING]:: %s Are you using MULTI-MPD during the process?? Please have a double check, if not, there is a error in the data format\n",__FUNCTION__);
 							}
 
-							printf("\n\n\n\n[Test Variables]::  *** Run_Ctrl_TimeSample_Index= %d, size=%d *****\n\n\n\n ", Run_Ctrl_TimeSample_Index-1, Data_APV_TimeSp_StrADC_temp.size());
+							//printf("\n\n\n\n[Test Variables]::  *** Run_Ctrl_TimeSample_Index= %d, size=%d *****\n\n\n\n ", Run_Ctrl_TimeSample_Index-1, Data_APV_TimeSp_StrADC_temp.size());
 
 							GEMRawFileDecoder_TreeSave(Run_Ctrl_Current_EvntID,Run_Ctrl_Current_MPDID,Run_Ctrl_Current_APVID,Data_APV_TimeSp_StrADC_temp);
 							Data_APV_TimeSp_StrADC_temp.clear();				  // finish all the time sample for one APV
@@ -446,6 +446,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 					Data_MPDIndex_temp=-1;			//  this will renew after finish this step( new time sample or new APV or new Events)
 					Data_APVADC_index_temp=-1;      //  this will renew after finish this step( new time sample or new APV or new Events)
 					Data_APV_StrADC_temp.clear();
+
 					break;
 				}
 				default:
@@ -480,6 +481,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 //GEMRawFileDecoder_DataCheck(GEMInfor_Buffer_return);
 return GEMInfor_Buffer_return;
 };
+
 
 // save the individual data in the tree files
 //int GEMRawFileDecoder::GEMRawFileDecoder_BufferSave(){
