@@ -40,8 +40,8 @@ GEMRawFileDecoder::GEMRawFileDecoder(TString Raw_File, TTree &APVTree) {
 	GEMAPV_tree->Branch("detID", &GEMR_ApvStrData.detID, "detID/I");
 	GEMAPV_tree->Branch("MPDID", &GEMR_ApvStrData.MPDID, "MPDID/I");
 	GEMAPV_tree->Branch("APVID", &GEMR_ApvStrData.APVID, "APVID/I");
-	GEMAPV_tree->Branch("SampleID", &GEMR_ApvStrData.SampeID, "SampeID/I");
-	GEMAPV_tree->Branch("StripADC", GEMR_ApvStrData.StripADC, "StripADC[KNSTRIPS]/I");
+	//GEMAPV_tree->Branch("SampleID", &GEMR_ApvStrData.SampeID, "SampeID/I");
+	GEMAPV_tree->Branch("StripADC", *GEMR_ApvStrData.StripADC, "StripADC[KMAX_NSAMPLE][KNSTRIPS]/I");
 
 	printf("[Test Infor]:: %s\n",Raw_File.Data());
 
@@ -426,7 +426,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 							printf("\n\n\n\n[Test Variables]::  *** Run_Ctrl_TimeSample_Index= %d, size=%d *****\n\n\n\n ", Run_Ctrl_TimeSample_Index-1, Data_APV_TimeSp_StrADC_temp.size());
 
-							//GEMInfor_Buffer_return=GEMRawFileDecoder_BufferSave(GEMInfor_Buffer_return,Run_Ctrl_Current_EvntID,Run_Ctrl_Current_MPDID,Run_Ctrl_Current_APVID,Data_APV_TimeSp_StrADC_temp);
+							GEMRawFileDecoder_TreeSave(Run_Ctrl_Current_EvntID,Run_Ctrl_Current_MPDID,Run_Ctrl_Current_APVID,Data_APV_TimeSp_StrADC_temp);
 							Data_APV_TimeSp_StrADC_temp.clear();				  // finish all the time sample for one APV
 
 							Run_Ctrl_Current_APVID  = Data_APVADC_index_temp;     //
@@ -541,22 +541,30 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_BufferSave(std::vector<GEM
 }
 
 //
-TTree GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input) {
+void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input) {
+printf("\n\n\n");
+			printf("save function\n");
+	GEMR_ApvStrData.EventID=EventID_index_temp;
+	GEMR_ApvStrData.MPDID=MPD_Index_Input;
+	GEMR_ApvStrData.APVID=APVADC_Index_Input;
 
 	map<int,map<int,int>>::iterator Iter_Tsamples=Tsample_StrADC_Input.begin();
-	unsigned int TSample_counter_temp=0;
 	while (Iter_Tsamples!=Tsample_StrADC_Input.end()){
-		TSample_counter_temp++;
+
 		map<int,int>::iterator Iter_NStrips = (Iter_Tsamples->second).begin();
 		while (Iter_NStrips != (Iter_Tsamples->second).end()) {
 
+			//printf("EID=%d,  MPDID=%d,  APVID=%d, Sample=%d, Strps=%d,   adc = %d\n",EventID_index_temp,MPD_Index_Input, APVADC_Index_Input, Iter_Tsamples->first,
+			//		Iter_NStrips->first, Iter_NStrips->second);
+
+			//GEMR_ApvStrData.StripADC[Iter_Tsamples->first][Iter_NStrips->first]=Iter_NStrips->second;
 			Iter_NStrips++;
 		}
 		Iter_Tsamples++;
 	}
-
-
-
+	//GEMAPV_tree->Fill();
+   //return GEMAPV_tree;
+	printf("\n\n\n");
 }
 
 // file format check function, mainly used for test

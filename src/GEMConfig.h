@@ -19,7 +19,7 @@ struct APV_DataStruct {
 		int MPDID;
 		int APVID;
 		int SampeID;
-		int StripADC [ KNSTRIPS ];
+		int StripADC[ KMAX_NSAMPLE ] [ KNSTRIPS ];
 	};
 
 

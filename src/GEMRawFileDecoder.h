@@ -42,7 +42,7 @@ public://
 
 //report functions
 public:
-    TTree GEMRawFileDecoder_TreeSave(int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input);    // generate the tree files
+    void GEMRawFileDecoder_TreeSave(int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input);    // generate the tree files
 
 
 // test functions
