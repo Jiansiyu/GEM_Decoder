@@ -248,6 +248,8 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 	};
 
+	/// loop all the data find the apv data
+	map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent;   // MPDID, APVID, TimesampleID, StripsID, ADC value
 
 	uint32_t Data_eventsID_temp=0;
     uint32_t Data_PrevEventsID_temp=0;   // last events ID that just finished
@@ -256,7 +258,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 		uint32_t Data_temp;
 		fread(&Data_temp,sizeof(uint32_t),1,file_input);
-		//printf("0x%x\n",Data_temp);
 
 		// End of Evnts
 		if((Data_temp&0xF0000000)== 0xE0000000) {
@@ -264,6 +265,9 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 			Data_eventsID_temp = Data_temp&0xFFFFFFF;
 			Data_PrevEventsID_temp= Data_eventsID_temp;      // The end of one Events, this is the Evnts ID that Just finished
 			printf("[Test Variables]:: End of Events=%d\n", Data_eventsID_temp);
+
+			// this is the right place to save the single event data
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 		};
 
@@ -356,7 +360,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 					Data_APVADC_index_temp= Data_ADCFifo_index;
 
 					Data_CommonBase    = (Data_temp >> 6) & 0x800;
-					//printf("******** %d ***************\n",Data_temp&0xF);
 					printf("[Test Variables]::* First * %s APV infors=> EventsID=%d, IAPV=%d \n",__FUNCTION__,Data_eventsID_temp, Data_ADCFifo_index);
 					Data_DCount=0;
 					break;
@@ -426,7 +429,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 							//printf("\n\n\n\n[Test Variables]::  *** Run_Ctrl_TimeSample_Index= %d, size=%d *****\n\n\n\n ", Run_Ctrl_TimeSample_Index-1, Data_APV_TimeSp_StrADC_temp.size());
 
-							GEMRawFileDecoder_TreeSave(Run_Ctrl_Current_EvntID,Run_Ctrl_Current_MPDID,Run_Ctrl_Current_APVID,Data_APV_TimeSp_StrADC_temp);
+							//GEMRawFileDecoder_TreeSave(Run_Ctrl_Current_EvntID,Run_Ctrl_Current_MPDID,Run_Ctrl_Current_APVID,Data_APV_TimeSp_StrADC_temp);
 							Data_APV_TimeSp_StrADC_temp.clear();				  // finish all the time sample for one APV
 
 							Run_Ctrl_Current_APVID  = Data_APVADC_index_temp;     //
@@ -455,7 +458,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 				 }
 
 			}
-			while((feof(file_input)==0)&&(Run_Ctrl_EndApvEndOfBlock==0));
+			while((feof(file_input)==0)&&(Run_Ctrl_EndApvEndOfBlock==0));     // the end of one event
 			Data_APV_StrADC_temp.clear();
 			Data_APV_TimeSp_StrADC_temp.clear();
 
