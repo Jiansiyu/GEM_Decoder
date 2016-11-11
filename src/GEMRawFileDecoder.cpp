@@ -234,8 +234,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 	// globle control variables
 	int Run_Ctrl_stateflg=0;
 
-
-
 	// no  sure what is this used for
 	uint16_t Data_ADCFifo_index=0;
 	int Data_CommonBase = 0;
@@ -249,7 +247,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 	};
 
 	/// loop all the data find the apv data
-	map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent;   // MPDID, APVID, TimesampleID, StripsID, ADC value
+	map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent;   //MPDID, APVID, TimesampleID, StripsID, ADC value
 
 	uint32_t Data_eventsID_temp=0;
     uint32_t Data_PrevEventsID_temp=0;   // last events ID that just finished
@@ -258,18 +256,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 		uint32_t Data_temp;
 		fread(&Data_temp,sizeof(uint32_t),1,file_input);
-
-		// End of Evnts
-		if((Data_temp&0xF0000000)== 0xE0000000) {
-
-			Data_eventsID_temp = Data_temp&0xFFFFFFF;
-			Data_PrevEventsID_temp= Data_eventsID_temp;      // The end of one Events, this is the Evnts ID that Just finished
-			printf("[Test Variables]:: End of Events=%d\n", Data_eventsID_temp);
-
-			// this is the right place to save the single event data
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-		};
 
 		// vme Event header
 		if((Data_temp&0xF0000000)== 0x10000000) {
@@ -298,7 +284,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 			printf("**********\n\n\n\nTRIGGER BLOCK\n");
 			uint32_t Data_triggerpatttern;
 			if(feof(file_input)==0) fread(&Data_triggerpatttern,sizeof(uint32_t),1,file_input);
-
 			printf("[RUN INFOR]:: eventID=%d, trigger pattern =%d \n",Data_eventsID_temp, (int)Data_triggerpatttern);
 			continue;
 		}
@@ -326,11 +311,16 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 			//uint32_t Data_EventID_index_temp=-1; //Events ID tracking information
 			map<int,int> Data_APV_StrADC_temp;
 			map<int,map<int,int>> Data_APV_TimeSp_StrADC_temp;
-			do {								// in this loop, it will loop over all the "6" time samples all the APVs
+
+
+			do {								//in this loop, it will loop over all the "6" time samples all the APVs
 				uint32_t Data_temp;
 				fread(&Data_temp,sizeof(uint32_t),1,file_input);
 				int File_HeaderID_temp=(Data_temp>>19)&0x3;
+
 				switch(File_HeaderID_temp) {
+
+
 				// APVsampleHeader APVID, this is the begining of each 128 strips data,
 				case 0x0: {
 					if(Run_Ctrl_stateflg!=0) {
@@ -371,13 +361,14 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 						printf("[ERROR]:: %s wrong control flag, it should be 1/2, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
 					}
 					Run_Ctrl_stateflg=2;
+
 					Data_APV_StrADC_temp.insert(make_pair((Data_temp>>12)&0x7f,Data_temp& 0xFFF));
 					//printf("[Test Variables]::* First <-> Second *\n");
-					//printf("[Test Variables]::EventsID=%d, Count=%d, trips=%d, ADC= %d \n",Data_eventsID_temp, Data_DCount++,(Data_temp>>12)&0x7f, Data_temp& 0xFFF);
+					printf("[Test Variables]::* First <-> Second *EventsID=%d, Count=%d, trips=%d, ADC= %d \n",Data_eventsID_temp, Data_DCount++,(Data_temp>>12)&0x7f, Data_temp& 0xFFF);
 					break;
 				}
 
-				// APVSampleTrailer
+				// APVSampleTrailer, can be used to check the data here, this is the end of the one time sample, all the 128 channel data should be already buffered in the buffer
 				case 0x2: {
 					if((Run_Ctrl_stateflg<1)||(Run_Ctrl_stateflg>2)){
 						printf("[ERROR]:: %s wrong control flag, it should be 1/2, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
@@ -454,15 +445,29 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 				}
 				default:
 					printf("[ERROR]:: Error in decoding raw data\n");
-
 				 }
 
 			}
 			while((feof(file_input)==0)&&(Run_Ctrl_EndApvEndOfBlock==0));     // the end of one event
+
 			Data_APV_StrADC_temp.clear();
 			Data_APV_TimeSp_StrADC_temp.clear();
 
 		};   //APV block Ended all
+
+
+		// End of Evnts
+		if((Data_temp&0xF0000000)== 0xE0000000) {
+
+			Data_eventsID_temp = Data_temp&0xFFFFFFF;
+			Data_PrevEventsID_temp= Data_eventsID_temp;      // The end of one Events, this is the Evnts ID that Just finished
+			printf("[Test Variables]:: End of Events=%d, Data BUffer Size=%d\n", Data_eventsID_temp,rdSingleEvent.size());
+
+			// this is the right place to save the single event data
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
+		};
 
 		// MAROC block
 		if((Data_temp & 0xF0000000) == 0xB0000000) {
