@@ -15,11 +15,10 @@ const unsigned int KNSTRIPS     = 128;
 struct APV_DataStruct {
 		int EventID;
 		int detID;
-
 		int MPDID;
 		int APVID;
 		int SampeID;
-		int StripADC[ KMAX_NSAMPLE ] [ KNSTRIPS ];
+		int StripADC[KMAX_NSAMPLE][KNSTRIPS];
 	};
 
 

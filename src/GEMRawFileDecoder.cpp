@@ -32,19 +32,17 @@ GEMRawFileDecoder::GEMRawFileDecoder(TString Raw_File){
 	printf("[Test Infor]:: %s\n",Raw_File.Data());
 };
 
-//
+//return the TTree files which buffers all the data
 GEMRawFileDecoder::GEMRawFileDecoder(TString Raw_File, TTree &APVTree) {
 	GEMRawFileDecoder_Raw_File = Raw_File;
 	GEMAPV_tree = &APVTree;
-
-	GEMAPV_tree->Branch("detID", &GEMR_ApvStrData.detID, "detID/I");
+	GEMAPV_tree->Branch("EventID", &GEMR_ApvStrData.EventID, "EventID/I");
 	GEMAPV_tree->Branch("MPDID", &GEMR_ApvStrData.MPDID, "MPDID/I");
 	GEMAPV_tree->Branch("APVID", &GEMR_ApvStrData.APVID, "APVID/I");
-	//GEMAPV_tree->Branch("SampleID", &GEMR_ApvStrData.SampeID, "SampeID/I");
-	GEMAPV_tree->Branch("StripADC", *GEMR_ApvStrData.StripADC, "StripADC[KMAX_NSAMPLE][KNSTRIPS]/I");
-
+	for(unsigned i =0; i<KMAX_NSAMPLE; i++){
+		GEMAPV_tree->Branch(Form("StripADC[%d]",i), GEMR_ApvStrData.StripADC[i], "StripADC[i]/I");
+	};
 	printf("[Test Infor]:: %s\n",Raw_File.Data());
-
 };
 
 GEMRawFileDecoder::~GEMRawFileDecoder() {
@@ -224,17 +222,12 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestFileHeader(FILE *fil
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input) {
 
 	vector<GEMInfor> GEMInfor_Buffer_return=GEMInfor_Buffer_Input;
-
 	const int GlNSample= (*(*GEMInfor_Buffer_Input.begin()).GEM_APV_Attached.begin()).GEMAPVinfor_fNumSample;
 	// globle control variables
 	int Run_Ctrl_stateflg=0;
-	printf("\n\n********DECODE RAW DATA********\n\n");
-
 	/// loop all the data find the apv data
 	map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent;   //MPDID, APVID, TimesampleID, StripsID, ADC value
 	uint32_t Data_eventsID_temp=0;
-    //uint32_t Data_PrevEventsID_temp=0;   // last events ID that just finished
-
 	while(feof(file_input)==0)   {       // while the file did not reach the end, in this loop, it will loop over all the events
 
 		uint32_t Data_temp;
@@ -242,16 +235,12 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 		// vme Event header
 		if((Data_temp&0xF0000000)== 0x10000000) {
-			//printf("*******\n\n\n\nVME HRADER\n");
 			Data_eventsID_temp= Data_temp&0xFFFFFFF;
 			continue;
 		}
 
 		// User infor, if this is user block
 		if((Data_temp&0xF0000000)== 0xD0000000) {
-
-			//printf("********\n\n\n\nUSER BLOCK\n");
-
 			Data_eventsID_temp= Data_temp&0xFFFFFFF;
 			uint32_t Data_UserWordCount, *Data_UserData;
 			fread(&Data_UserWordCount,sizeof(uint32_t),1,file_input);   // read how large is the user data is
@@ -408,10 +397,8 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 			Data_eventsID_temp = Data_temp&0xFFFFFFF;
 
-			//printf("[Test Variables]:: End of Events=%d, Data BUffer Size=%d\n", Data_eventsID_temp,rdSingleEvent.size());
 			// this is the right place to save the single event data
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 			// for debug test
 			//MPDID, APVID, TimesampleID, StripsID, ADC value
 			map< int , map < int , map < int, map< int,int > > > >::iterator iter=rdSingleEvent.begin();
@@ -441,7 +428,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 			rdSingleEvent.clear();
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		};
-
 		// MAROC block
 		if((Data_temp & 0xF0000000) == 0xB0000000) {
 			//printf("[Run Infor]:: MAROC Block decoder\n");
@@ -456,100 +442,197 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 			fread(&Data_Maroc,sizeof(char),4*Data_MaRocWordCount,file_input);
 			continue;
 		}
-
-    //exit(0); // for test usage
 	}
-//GEMRawFileDecoder_DataCheck(GEMInfor_Buffer_return);
 return GEMInfor_Buffer_return;
 };
 
 
-// save the individual data informations to the data buffer
-vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_BufferSave(std::vector<GEMInfor> GEMInfor_Buffer_Input,int EventID_index_Input,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input) {
+// file version 5 decoder, used for decoder just one event, when using this function, need to check whether the file has reach the end
+map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDecoder::GEMRawFileDecoder_SingleingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input) {
 
-	vector<GEMInfor> GEMInfor_Buffer_return;    // return data
-	GEMInfor_Buffer_return.clear();
-    //printf("\n**************** %d ***********************\n",GEMInfor_Buffer_Input.size());
-	//GEMInfor *GEMInfor_Indiv_buffer;            // single MPD infor buffer
+	int Run_Ctrl_stateflg=0;        // globle control variables
+	map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent;   //MPDID, APVID, TimesampleID, StripsID, ADC value
+	uint32_t Data_eventsID_temp=0;
+	while(feof(file_input)==0)   {       // while the file did not reach the end, in this loop, it will loop over all the events
+		uint32_t Data_temp;
+		fread(&Data_temp,sizeof(uint32_t),1,file_input);
+		// vme Event header
+		if((Data_temp&0xF0000000)== 0x10000000) {
+			Data_eventsID_temp= Data_temp&0xFFFFFFF;
+			continue;
+		}
 
-	vector<GEMInfor>::iterator Iter_MPD=GEMInfor_Buffer_Input.begin();        /// loop all the MPDs and find MPD that the data belongs to
-	for(;Iter_MPD<GEMInfor_Buffer_Input.end();Iter_MPD++){    // loop the MPD, Find the MPD
+		// User infor, if this is user block
+		if((Data_temp&0xF0000000)== 0xD0000000) {
+			Data_eventsID_temp= Data_temp&0xFFFFFFF;
+			uint32_t Data_UserWordCount, *Data_UserData;
+			fread(&Data_UserWordCount,sizeof(uint32_t),1,file_input);   // read how large is the user data is
+			Data_UserData= new uint32_t[Data_UserWordCount];
+			fread(&Data_UserData,sizeof(uint32_t),Data_UserWordCount,file_input);   // read the user infor block
+			delete Data_UserData;
+			continue;
+		}
 
-		//printf("slot in vector =%d   MPD slot =%d \n",(*Iter_MPD).GEMInfor_fSlot,MPD_Index_Input );
-		if((*Iter_MPD).GEMInfor_fSlot == MPD_Index_Input){    //
+		// trigger Event Header
+		if((Data_temp&0xF0000000)== 0x20000000) {
+			Data_eventsID_temp=Data_temp&0xFFFFFFF;
+			//printf("**********\n\n\n\nTRIGGER BLOCK\n");
+			uint32_t Data_triggerpatttern;
+			if(feof(file_input)==0) fread(&Data_triggerpatttern,sizeof(uint32_t),1,file_input);
+			//printf("[RUN INFOR]:: eventID=%d, trigger pattern =%d \n",Data_eventsID_temp, (int)Data_triggerpatttern);
+			continue;
+		}
 
-			GEMInfor * GEMInfor_Buffer_temp=new GEMInfor();
-			(*Iter_MPD).GEMInfor_clone(*GEMInfor_Buffer_temp);
+		// APV Events header, one event data
+		if((Data_temp&0xF0000000)== 0xA0000000) {
+			Data_eventsID_temp=Data_temp&0xFFFFFFF;
+			Run_Ctrl_stateflg=0;  // reset when comes to the next events
 
-			// for test usage
-			//printf("********   size=%d  ***********\n",(GEMInfor_Buffer_temp->GEM_APV_Attached).size());
-			int size1=(*Iter_MPD).GEMInfor_fAPVIndex.size();
-			int size2=GEMInfor_Buffer_temp->GEMInfor_fAPVIndex.size();
-			if(!((size1==size2)&&(size2!=0))){
-				printf("[ERROR]:: %s Error in copying data vector\n",__FUNCTION__);
-				}
-			else
-			{
-				vector<GEMAPVinfor>::iterator Iter_APV=(GEMInfor_Buffer_temp->GEM_APV_Attached).begin();
-				vector<GEMAPVinfor> GEM_APV_Attached_buffer_temp;
-				for(;Iter_APV<(GEMInfor_Buffer_temp->GEM_APV_Attached).end();Iter_APV++){
-					if((*Iter_APV).GEMAPVinfor_fADC==APVADC_Index_Input) {      // find the APV that the data belongs to
+			// in this do loop, it will loop all "6" time samples and all the APV cards, there will be 6*Number of Cards*128 strips events
+			int Run_Ctrl_EndApvEndOfBlock=0;  // check whether reach the end of the data block
+			uint16_t Data_APV_index=0;    // buffer the APV address
+			// data saving control variables
+			int Run_Ctrl_Current_APVID=-1;
+			int Run_Ctrl_Current_MPDID=-1;
+			int Run_Ctrl_TimeSample_Index=-1;
 
-						GEMAPVinfor *GEMAPVInfor_Buffer_temp= new GEMAPVinfor();
-						(*Iter_APV).GEMAPVinfor_clone(*GEMAPVInfor_Buffer_temp); //clone the vector
-						(GEMAPVInfor_Buffer_temp->GEMAPVinfor_RawData).insert(make_pair(EventID_index_Input,Tsample_StrADC_Input));
-						//printf("**************8 size=%d\n",(GEMAPVInfor_Buffer_temp->GEMAPVinfor_RawData).size());
-						GEM_APV_Attached_buffer_temp.push_back(*GEMAPVInfor_Buffer_temp);
+			map < int,int > Data_APV_SingleTimeSp_StrADC_temp;				//
+			map < int, map < int,int > > Data_APV_TimeSp_StrADC_temp;		//Time SampleID. <Number of Strips, ADC value>
+			map < int, map< int, map<int,int > > > Data_AllAPV_temp;        // APVID, Time Sample ID, <Number of strips, ADC value>
 
+			do {								//in this loop, it will loop over all the "6" time samples all the APVs
+				uint32_t Data_temp;
+				fread(&Data_temp,sizeof(uint32_t),1,file_input);
+				int File_HeaderID_temp=(Data_temp>>19)&0x3;
+
+				switch(File_HeaderID_temp) {
+				// APVsampleHeader APVID, this is the begining of each 128 strips data,
+				case 0x0: {
+
+					if(Run_Ctrl_stateflg!=0) {
+						printf("[ERROR]:: %s wrong control flag, it should be 0, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
 					}
-					else {														//
-						GEM_APV_Attached_buffer_temp.push_back(*Iter_APV);
+					Run_Ctrl_EndApvEndOfBlock = Data_temp & 0x40000; // end of APV block
+					if(Run_Ctrl_EndApvEndOfBlock){      // if reach the end of APV events block
+						break;
 					}
+					Run_Ctrl_stateflg=1; // change the process control buffer, ready for the second step decode process
+					uint32_t Data_FrameHeader=(Data_temp>>4)& 0xFFF;   // varify the frame header
+					if(((Data_FrameHeader&0xE00)!= 0xE00)||((Data_FrameHeader&0x1)==0)) {    // check the header
+						printf("[ERROR]::  %s  Frame header Error\n",__FUNCTION__);
+					}
+					Data_APV_index = Data_temp&0xf;
+					//Data_CommonBase    = (Data_temp >> 6) & 0x800;
+					//printf("[Test Variables]::* First * %s APV infors=> EventsID=%d, IAPV=%d \n",__FUNCTION__,Data_eventsID_temp, Data_APV_index);
+					//Data_DCount=0;
+					Data_APV_SingleTimeSp_StrADC_temp.clear();
+					Run_Ctrl_TimeSample_Index++;
+					break;
 				}
-				GEMInfor_Buffer_temp->GEM_APV_Attached.clear();
-				GEMInfor_Buffer_temp->GEM_APV_Attached=GEM_APV_Attached_buffer_temp;
-				GEMInfor_Buffer_return.push_back(*GEMInfor_Buffer_temp);
-			 }
 
-		  }
-		 else {    // if this is not the MPD that the data belongs to, just buffer the data to return vector
-			GEMInfor_Buffer_return.push_back(*Iter_MPD);
+				// APV sample Data
+				case 0x1: {
+					if((Run_Ctrl_stateflg<1)||(Run_Ctrl_stateflg>2)){
+						printf("[ERROR]:: %s wrong control flag, it should be 1/2, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
+					}
+					Run_Ctrl_stateflg=2;
+					// save the data
+					Data_APV_SingleTimeSp_StrADC_temp.insert(make_pair((Data_temp>>12)&0x7f,Data_temp& 0xFFF));
+					//printf("[Test Variables]::* First <-> Second *EventsID=%d, Count=%d, trips=%d, ADC= %d \n",Data_eventsID_temp, ++Data_DCount,(Data_temp>>12)&0x7f, Data_temp& 0xFFF);
+					break;
+				}
+				// APVSampleTrailer, can be used to check the data here, this is the end of the one time sample, all the 128 channel data should be already buffered in the buffer
+				case 0x2: {
+					if((Run_Ctrl_stateflg<1)||(Run_Ctrl_stateflg>2)){
+						printf("[ERROR]:: %s wrong control flag, it should be 1/2, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
+					}
+					//Time_samples_test=0;
+					Run_Ctrl_stateflg = 3;
+					uint32_t Data_MPD_slot_index=(Data_temp >> 12)& 0x1F;    //MPD-ID
+					uint32_t Data_Frame_Trailer=Data_temp&& 0xfff;
+					Run_Ctrl_Current_MPDID=Data_MPD_slot_index;
+					//printf("[Test Variables]:: * Second      *  MPD slot_index= %d Frame_trailer (sample index)=%d \n", Data_MPD_slot_index,Data_Frame_Trailer);
+					break;
+				}
+
+				//APV  Sample End Block, save and statistic all the data here
+				case 0x3: {
+
+					if(Run_Ctrl_stateflg!=3) {
+						printf("[ERROR]:: %s wrong control flag, it should be 0, but here the control flag is %d\n",__FUNCTION__, Run_Ctrl_stateflg);
+					 }
+					Run_Ctrl_stateflg=0;    // clean the flag, ready for the next time sample save
+					//data saving
+					if(Data_APV_SingleTimeSp_StrADC_temp.size()==128){
+						if(Data_APV_TimeSp_StrADC_temp.size()<(*(*GEMInfor_Buffer_Input.begin()).GEM_APV_Attached.begin()).GEMAPVinfor_fNumSample){
+
+							Data_APV_TimeSp_StrADC_temp.insert(make_pair(Run_Ctrl_TimeSample_Index,Data_APV_SingleTimeSp_StrADC_temp));
+							Data_APV_SingleTimeSp_StrADC_temp.clear();
+							if(Data_APV_TimeSp_StrADC_temp.size()==(*(*GEMInfor_Buffer_Input.begin()).GEM_APV_Attached.begin()).GEMAPVinfor_fNumSample){   // all the simple samples for the apv
+								Run_Ctrl_TimeSample_Index=-1;
+
+								if(Data_AllAPV_temp.size()<(*GEMInfor_Buffer_Input.begin()).GEM_APV_Attached.size()){   // check the number of APV reach the maximum the number of APV
+									Data_AllAPV_temp.insert(make_pair(Data_APV_index,Data_APV_TimeSp_StrADC_temp));
+								    Data_APV_TimeSp_StrADC_temp.clear();
+								    if(Data_AllAPV_temp.size()==(*GEMInfor_Buffer_Input.begin()).GEM_APV_Attached.size()){ // if all the apvs finish decode
+								    	if(rdSingleEvent.size() < GEMInfor_Buffer_Input.size()){
+								    		rdSingleEvent.insert(make_pair(Run_Ctrl_Current_MPDID,Data_AllAPV_temp));
+								    		Data_AllAPV_temp.clear();
+								    	}
+								     }
+									}
+							}
+						}
+					 }
+					else {
+						printf("[ERROR]:: %s data number error",__FUNCTION__);
+					    }
+					// finish data saving
+
+					break;
+				}
+
+				default:
+					printf("[ERROR]:: Error in decoding raw data\n");
+				 }
+
+			}
+			while((feof(file_input)==0)&&(Run_Ctrl_EndApvEndOfBlock==0));     // the end of one event
+
+		};   //APV block Ended all
+
+
+		// End of Evnts
+		if((Data_temp&0xF0000000)== 0xE0000000) {
+
+			Data_eventsID_temp = Data_temp&0xFFFFFFF;
+			// this is the right place to save the single event data
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
+			//eventID       MPDID,    APVID, TimesampleID, StripsID, ADC value
+			map <int, map < int, map < int, map<int, map < int, int > > > > > Single_Evnts_Return;
+			Single_Evnts_Return.insert(make_pair(Data_eventsID_temp,rdSingleEvent));
+			rdSingleEvent.clear();
+			return Single_Evnts_Return;
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
+		};
+		// MAROC block
+		if((Data_temp & 0xF0000000) == 0xB0000000) {
+			Data_eventsID_temp= Data_temp & 0xFFFFFFF;
+			uint32_t Data_MaRocWordCount=0;
+			fread(&Data_MaRocWordCount,sizeof(uint32_t),1,file_input);
+			int Data_WordCount=Data_MaRocWordCount & 0xFFFF;
+			int Data_DeviceID=(Data_MaRocWordCount>>16)&0xFFF;
+			unsigned char *Data_Maroc;
+			Data_Maroc=(unsigned char *)malloc(4*Data_WordCount*sizeof(char));
+			fread(&Data_Maroc,sizeof(char),4*Data_MaRocWordCount,file_input);
+			continue;
 		}
 	}
-	return GEMInfor_Buffer_return;
-}
+};
 
 //
-void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp,map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent_Input) {
-	printf("\n\n\n");
-	printf("save function\n");
-    printf("\n\n\n");
-}
+void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp, map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent_Input) {
 
-// file format check function, mainly used for test
-int GEMRawFileDecoder::GEMRawFileDecoder_DataCheck(vector<GEMInfor> GEMInfor_Buffer_Input) {
-
-	// error flag
-	int ERROR_FLAG_ID=-10;
-
-	vector<GEMInfor>::iterator Iter_MPD=GEMInfor_Buffer_Input.begin();
-	for(;Iter_MPD < GEMInfor_Buffer_Input.end();Iter_MPD++){
-		// check the the matching of the setting
-		map<int,int>::iterator I2C_check_iter=(*Iter_MPD).GEMInfor_fAPVIndex.begin();
-		while(I2C_check_iter != (*Iter_MPD).GEMInfor_fAPVIndex.end()) {
-			vector<GEMAPVinfor>::iterator Iter_APV=(*Iter_MPD).GEM_APV_Attached.begin();
-			for(;Iter_APV < (*Iter_MPD).GEM_APV_Attached.end();Iter_APV++)
-			{
-				if(((*I2C_check_iter).first==(*Iter_APV).GEMAPVinfor_fI2C)&&((*I2C_check_iter).second==(*Iter_APV).GEMAPVinfor_fADC)){
-					printf("[RUN INFOR check]:: %s ADC=%d, I2C=%d, Events=%d\n",__FUNCTION__, (*Iter_APV).GEMAPVinfor_fADC, (*Iter_APV).GEMAPVinfor_fI2C, (*Iter_APV).GEMAPVinfor_RawData.size());
-				}
-			}
-			I2C_check_iter++;
-		}
-
-	}
-
-return 1;
 }
 
 // test functions

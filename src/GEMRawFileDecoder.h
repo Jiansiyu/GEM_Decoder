@@ -39,8 +39,9 @@ public://
 	vector<GEMInfor> GEMRawFileDecoder_Run(std::vector<GEMInfor> GEMInfor_Buffer_Input);    // main decoder function
     vector<GEMInfor> GEMRawFileDecoder_ingestFileHeader(FILE *file_input, int  fileVersion_input, vector<GEMInfor> GEMInfor_Buffer_Input);
     vector<GEMInfor> GEMRawFileDecoder_ingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input);
+    std::map<int,std::map<int,std::map<int,std::map< int, std::map< int, int > > > > > GEMRawFileDecoder_SingleingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input);
 
-//report functions
+    //report functions
 public:
     void GEMRawFileDecoder_TreeSave(int EventID_index_temp,map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent_Input);    // generate the tree files
 
@@ -54,14 +55,11 @@ private:
 	TString  GEMRawFileDecoder_Raw_File;
 	int    GEMRawFileDecoder_EventsIndex=0; // buffer the current Evnts ID, used for the concurrent process
 
-	// used for return the value
-
 	TTree *GEMAPV_tree;					// used for buffer the data
 	APV_DataStruct GEMR_ApvStrData;     // used for save the data in the tree file
+
 // private functions
 private:
-	vector<GEMInfor> GEMRawFileDecoder_BufferSave(std::vector<GEMInfor> GEMInfor_Buffer_Input,int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input); // save the individual data informations to the
-    int GEMRawFileDecoder_BufferSave(int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input);
 	int GEMRawFileDecoder_DataCheck(vector<GEMInfor> GEMInfor_Buffer_Input);                // check the number of Datas, varify it is matching the configuration
 
 // files related IDs
