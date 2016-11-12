@@ -31,7 +31,7 @@ class GEMRawFileDecoder {
 public:
 	GEMRawFileDecoder();
 	GEMRawFileDecoder(TString Raw_File);   // load the raw files
-	GEMRawFileDecoder(TString Raw_File, TTree &APVTree);
+	GEMRawFileDecoder(TString Raw_File, TTree *APVTree);
 
 	virtual ~GEMRawFileDecoder();
 
@@ -44,7 +44,7 @@ public://
     //report functions
 public:
     void GEMRawFileDecoder_TreeSave(int EventID_index_temp,map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent_Input);    // generate the tree files
-
+    TTree GEMRawFileDecoder_GetTree();
 
 // test functions
 public:
@@ -55,7 +55,7 @@ private:
 	TString  GEMRawFileDecoder_Raw_File;
 	int    GEMRawFileDecoder_EventsIndex=0; // buffer the current Evnts ID, used for the concurrent process
 
-	TTree *GEMAPV_tree;					// used for buffer the data
+	TTree GEMAPV_tree;					// used for buffer the data
 	APV_DataStruct GEMR_ApvStrData;     // used for save the data in the tree file
 
 // private functions

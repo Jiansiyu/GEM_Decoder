@@ -33,14 +33,14 @@ GEMRawFileDecoder::GEMRawFileDecoder(TString Raw_File){
 };
 
 //return the TTree files which buffers all the data
-GEMRawFileDecoder::GEMRawFileDecoder(TString Raw_File, TTree &APVTree) {
+GEMRawFileDecoder::GEMRawFileDecoder(TString Raw_File, TTree *APVTree) {
 	GEMRawFileDecoder_Raw_File = Raw_File;
-	GEMAPV_tree = &APVTree;
-	GEMAPV_tree->Branch("EventID", &GEMR_ApvStrData.EventID, "EventID/I");
-	GEMAPV_tree->Branch("MPDID", &GEMR_ApvStrData.MPDID, "MPDID/I");
-	GEMAPV_tree->Branch("APVID", &GEMR_ApvStrData.APVID, "APVID/I");
+	//&GEMAPV_tree= APVTree;
+	GEMAPV_tree.Branch("EventID", &GEMR_ApvStrData.EventID, "EventID/I");
+	GEMAPV_tree.Branch("MPDID", &GEMR_ApvStrData.MPDID, "MPDID/I");
+	GEMAPV_tree.Branch("APVID", &GEMR_ApvStrData.APVID, "APVID/I");
 	for(unsigned i =0; i<KMAX_NSAMPLE; i++){
-		GEMAPV_tree->Branch(Form("StripADC[%d]",i), GEMR_ApvStrData.StripADC[i], "StripADC[i]/I");
+		GEMAPV_tree.Branch(Form("StripADC[%d]",i), GEMR_ApvStrData.StripADC[i], Form("StripADC[%d]/I",i));
 	};
 	printf("[Test Infor]:: %s\n",Raw_File.Data());
 };
@@ -236,6 +236,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 		// vme Event header
 		if((Data_temp&0xF0000000)== 0x10000000) {
 			Data_eventsID_temp= Data_temp&0xFFFFFFF;
+
 			continue;
 		}
 
@@ -312,7 +313,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 					//Data_CommonBase    = (Data_temp >> 6) & 0x800;
 					//printf("[Test Variables]::* First * %s APV infors=> EventsID=%d, IAPV=%d \n",__FUNCTION__,Data_eventsID_temp, Data_APV_index);
 					//Data_DCount=0;
-
 					Data_APV_SingleTimeSp_StrADC_temp.clear();
 					Run_Ctrl_TimeSample_Index++;
 					break;
@@ -391,12 +391,11 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 
 		};   //APV block Ended all
 
-
 		// End of Evnts
 		if((Data_temp&0xF0000000)== 0xE0000000) {
 
 			Data_eventsID_temp = Data_temp&0xFFFFFFF;
-
+			/*printf("************ event= %d\n", Data_eventsID_temp);
 			// this is the right place to save the single event data
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
 			// for debug test
@@ -425,6 +424,8 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 				 iter++;
 			}
             // end of debug test
+             */
+			GEMRawFileDecoder_TreeSave(Data_eventsID_temp,rdSingleEvent);
 			rdSingleEvent.clear();
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		};
@@ -443,6 +444,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 			continue;
 		}
 	}
+	GEMAPV_tree.Print();
 return GEMInfor_Buffer_return;
 };
 
@@ -630,9 +632,33 @@ map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDeco
 	}
 };
 
-//
+////                                                                           MPDID, APVID, TimesampleID, StripsID, ADC value
 void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp, map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent_Input) {
+	GEMR_ApvStrData.EventID=EventID_index_temp;
+	map< int , map < int , map < int, map< int,int > > > >::iterator iter_mpd=rdSingleEvent_Input.begin();
+	while(iter_mpd!=rdSingleEvent_Input.end()){    // loop on the MPD
+		GEMR_ApvStrData.MPDID=iter_mpd->first;
 
+		map < int , map < int, map< int,int > > > ::iterator itter_apv=iter_mpd->second.begin();   // loop on all the APV that attched on this mpd
+		while(itter_apv!=iter_mpd->second.end()){
+			GEMR_ApvStrData.APVID=itter_apv->first;
+			map < int, map< int,int > >::iterator ittter_Tsample=itter_apv->second.begin();
+			while(ittter_Tsample!=itter_apv->second.end()){
+
+				map<int,int>::iterator itttt_Nstrip=ittter_Tsample->second.begin();
+				while(itttt_Nstrip!=ittter_Tsample->second.end()){
+					//printf("EventID=%d,  MPD=%d,  APV=%d,  Tsample=%d,  NStrips=%d,   ADC=%d\n",EventID_index_temp,iter_mpd->first, itter_apv->first, ittter_Tsample->first,itttt_Nstrip->first,itttt_Nstrip->second);
+					GEMR_ApvStrData.StripADC[ittter_Tsample->first][itttt_Nstrip->first]=itttt_Nstrip->second;
+					itttt_Nstrip++;
+				}
+				ittter_Tsample++;
+			}
+			GEMAPV_tree.Fill();
+			itter_apv++;
+		}
+
+		iter_mpd++;
+	}
 }
 
 // test functions
