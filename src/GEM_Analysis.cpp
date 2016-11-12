@@ -35,20 +35,5 @@ int main(int argc, char *argv[])
 		GEMRawFileDecoder *GEMRawFileDecoder_TEST=new GEMRawFileDecoder("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/Debug/test_2458.dat");
 		GEMRawFileDecoder_TEST->GEMRawFileDecoder_TestFunction();
 
-		/*
-		map<int,int> map_test;
-		for(int i=0; i<100;i++)
-		{
-			map_test.insert(make_pair(i,i));
-	 	 }
-		map<int,int>::iterator map_iter=map_test.begin();
-		while(map_iter != map_test.end())
-		{
-			cout<<"first="<<map_iter->first<<"  second="<<map_iter->second<<endl;
-			map_iter++;
-		}*/
-
-
-
 		return 0;
 }

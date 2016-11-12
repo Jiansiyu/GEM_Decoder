@@ -412,7 +412,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 			// this is the right place to save the single event data
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
 			// for debug test
 			//MPDID, APVID, TimesampleID, StripsID, ADC value
 			map< int , map < int , map < int, map< int,int > > > >::iterator iter=rdSingleEvent.begin();
@@ -521,30 +520,10 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_BufferSave(std::vector<GEM
 }
 
 //
-void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp,uint32_t MPD_Index_Input, uint32_t APVADC_Index_Input,map<int,map<int, int> > Tsample_StrADC_Input) {
+void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp,map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent_Input) {
 	printf("\n\n\n");
 	printf("save function\n");
-	GEMR_ApvStrData.EventID=EventID_index_temp;
-	GEMR_ApvStrData.MPDID=MPD_Index_Input;
-	GEMR_ApvStrData.APVID=APVADC_Index_Input;
-
-	map<int,map<int,int>>::iterator Iter_Tsamples=Tsample_StrADC_Input.begin();
-	while (Iter_Tsamples!=Tsample_StrADC_Input.end()){
-
-		map<int,int>::iterator Iter_NStrips = (Iter_Tsamples->second).begin();
-		while (Iter_NStrips != (Iter_Tsamples->second).end()) {
-
-			//printf("EID=%d,  MPDID=%d,  APVID=%d, Sample=%d, Strps=%d,   adc = %d\n",EventID_index_temp,MPD_Index_Input, APVADC_Index_Input, Iter_Tsamples->first,
-			//		Iter_NStrips->first, Iter_NStrips->second);
-
-			//GEMR_ApvStrData.StripADC[Iter_Tsamples->first][Iter_NStrips->first]=Iter_NStrips->second;
-			Iter_NStrips++;
-		}
-		Iter_Tsamples++;
-	}
-	//GEMAPV_tree->Fill();
-   //return GEMAPV_tree;
-	printf("\n\n\n");
+    printf("\n\n\n");
 }
 
 // file format check function, mainly used for test
