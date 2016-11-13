@@ -132,10 +132,13 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 			}
 			TThread::UnLock();
 			TCanvas *Canvas_Raw=new TCanvas(Form("Raw_Display_Canvas_Evt%d",SingleEvent_temp.begin()->first),Form(""),1000,1000);
-			Canvas_Raw->DivideSquare(NumberofAPV);
+            Canvas_Raw->Divide(2,2);
 			for(int i=0; i<NumberofAPV; i++)
 			{
-
+                Canvas_Raw->cd(i+1);
+                sEvent_histo[i]->Draw();
+                //Canvas_Raw->Update();
+                
 			}
 			Canvas_Raw->Modified();
 			Canvas_Raw->Update();
@@ -148,7 +151,6 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 				printf("[ERROR]:: _%s Unsupported file Version\n",__FUNCTION__);
 				exit(-1);
 		   };
-
 
 	  }
 	 else {
