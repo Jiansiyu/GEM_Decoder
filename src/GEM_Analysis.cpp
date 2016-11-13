@@ -25,9 +25,9 @@ void Usage()
 {
 
 	}
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
-		TApplication theApp("App", NULL, NULL);   //Root application framework
+		TApplication theApp("App", &argc, argv);   //Root application framework
 		GEMInputHandler *GEMDecoderIuputHandler = new GEMInputHandler();
 		GEMDecoderIuputHandler->GEMInputHandler_TestFunctions();
 
@@ -35,6 +35,6 @@ int main(int argc, char *argv[])
 		TTree test_tree;
 		GEMRawFileDecoder *GEMRawFileDecoder_TEST=new GEMRawFileDecoder("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/Debug/test_2385.dat", &test_tree);
 		GEMRawFileDecoder_TEST->GEMRawFileDecoder_TestFunction();
-
+		theApp.Run(kTRUE);
 		return 0;
 }

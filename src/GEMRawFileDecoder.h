@@ -41,6 +41,7 @@ public://
     vector<GEMInfor> GEMRawFileDecoder_ingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input);
     std::map<int,std::map<int,std::map<int,std::map< int, std::map< int, int > > > > > GEMRawFileDecoder_SingleingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input);
 
+    void GEMRawFileDecoder_RawDisplay(int Entries_input=-1);
     //report functions
 public:
     void GEMRawFileDecoder_TreeSave(int EventID_index_temp,map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent_Input);    // generate the tree files
