@@ -37,12 +37,11 @@ public:
 
 public://
 	vector<GEMInfor> GEMRawFileDecoder_Run(std::vector<GEMInfor> GEMInfor_Buffer_Input);    // main decoder function
-    vector<GEMInfor> GEMRawFileDecoder_ingestFileHeader(FILE *file_input, int  fileVersion_input, vector<GEMInfor> GEMInfor_Buffer_Input);
-    vector<GEMInfor> GEMRawFileDecoder_ingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input);
-    std::map<int,std::map<int,std::map<int,std::map< int, std::map< int, int > > > > > GEMRawFileDecoder_SingleingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input);
 
     void GEMRawFileDecoder_RawDisplay(int Entries_input=-1);
-    void GEMRawFileDecoder_Pedestal(int Entries_input=-1);    //
+    void GEMRawFileDecoder_PedestalDecoder(int Entries_input=-1);    //
+    void GEMRawFileDecoder_ZeroSubtractionDisplay();
+    void GEMRawFileDecoder_HistoDecoder();
     //report functions
 public:
     void GEMRawFileDecoder_TreeSave(int EventID_index_temp,map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent_Input);    // generate the tree files
@@ -59,6 +58,12 @@ private:
 
 	TTree GEMAPV_tree;					// used for buffer the data
 	APV_DataStruct GEMR_ApvStrData;     // used for save the data in the tree file
+
+// lower level decode function
+private:
+	vector<GEMInfor> GEMRawFileDecoder_ingestFileHeader(FILE *file_input, int  fileVersion_input, vector<GEMInfor> GEMInfor_Buffer_Input);
+    vector<GEMInfor> GEMRawFileDecoder_ingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input);
+    std::map<int,std::map<int,std::map<int,std::map< int, std::map< int, int > > > > > GEMRawFileDecoder_SingleingestEventV5(FILE *file_input, TString ifile, vector<GEMInfor> GEMInfor_Buffer_Input);
 
 // private functions
 private:

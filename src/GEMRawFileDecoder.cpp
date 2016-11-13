@@ -107,41 +107,48 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 			int Histo_counter=0;
 			TThread::Lock();
 			TH1F *sEvent_histo[NumberofAPV];
-			while(itter_mpd!=SingleEvent_temp.begin()->second.begin()){
+			while(itter_mpd!=SingleEvent_temp.begin()->second.end()){   // loop on MPD
 				map < int, map<int, map < int, int > > > ::iterator ittter_apv=itter_mpd->second.begin();
-				while(ittter_apv!=itter_mpd->second.end()){
+				while(ittter_apv!=itter_mpd->second.end()){                                               // loop on APV
+
 					sEvent_histo[Histo_counter]= new TH1F(Form("Ev%d_MPD%d_APV%d",SingleEvent_temp.begin()->first,itter_mpd->first,ittter_apv->first),
-											  Form("Ev%d_MPD%d_APV%d",SingleEvent_temp.begin()->first,itter_mpd->first,ittter_apv->first),
-											  (SingleEvent_temp.begin()->second.begin()->second.begin()->second.size())*(128+2)-1,
-											  0,
-											  (SingleEvent_temp.begin()->second.begin()->second.begin()->second.size())*(128+2));
-					Histo_counter++;
+														Form("Ev%d_MPD%d_APV%d",SingleEvent_temp.begin()->first,itter_mpd->first,ittter_apv->first),
+														(SingleEvent_temp.begin()->second.begin()->second.begin()->second.size())*(128+2)-1,
+														0,
+														(SingleEvent_temp.begin()->second.begin()->second.begin()->second.size())*(128+2));
+
 					map<int, map < int, int > >::iterator itttter_Tsample=ittter_apv->second.begin();
 					while(itttter_Tsample!=ittter_apv->second.end()){
 						map < int, int >::iterator ittttter_Nstrips=itttter_Tsample->second.begin();
 						while(ittttter_Nstrips!=itttter_Tsample->second.end()){
 							sEvent_histo[Histo_counter]->Fill((itttter_Tsample->first)*(128+2)+ittttter_Nstrips->first,ittttter_Nstrips->second);
 							ittttter_Nstrips++;
-						}
-						itttter_Tsample++;
-					}
+						  }
+						  itttter_Tsample++;
+					  }
 					ittter_apv++;
+					Histo_counter++;
 				}
 				itter_mpd++;
 			}
 			TThread::UnLock();
+
 			TCanvas *Canvas_Raw=new TCanvas(Form("Raw_Display_Canvas_Evt%d",SingleEvent_temp.begin()->first),Form(""),1000,1000);
-            Canvas_Raw->Divide(2,2);
+			Canvas_Raw->Divide(2,(int)NumberofAPV/2);
 			for(int i=0; i<NumberofAPV; i++)
 			{
                 Canvas_Raw->cd(i+1);
                 sEvent_histo[i]->Draw();
-                //Canvas_Raw->Update();
-			}
+                Canvas_Raw->Update();
+		     }
+
 			Canvas_Raw->Modified();
 			Canvas_Raw->Update();
 
 			getchar();
+			delete Canvas_Raw;
+			for(int i =0; i < NumberofAPV; i++)
+				delete sEvent_histo[i];
 			}
 		  }
 		else {
@@ -157,7 +164,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 };
 
 
-void GEMRawFileDecoder::GEMRawFileDecoder_Pedestal(int Entries_input){
+void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
     vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
     FILE *Input_File_temp;
     Input_File_temp = fopen(GEMRawFileDecoder_Raw_File.Data(), "rb");
@@ -333,8 +340,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestFileHeader(FILE *fil
 		// test functions+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 		for (unsigned int APV_index_temp = 0; APV_index_temp < GEMInfor_Buffer_temp->GEMInfor_fApvCount; ++APV_index_temp) {
-
-			//printf("[Test INFOR]:: Decoding APV %d/%d infor\n",APV_index_temp,GEMInfor_Buffer_temp->GEMInfor_fApvCount);
 
 			GEMAPVinfor *GEMAPV_Buffer_temp= new GEMAPVinfor();      // temp buffer for APVinfor class
 
@@ -763,16 +768,12 @@ map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDeco
 		if((Data_temp&0xF0000000)== 0xE0000000) {
 
 			Data_eventsID_temp = Data_temp&0xFFFFFFF;
-
 			// this is the right place to save the single event data
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
 			//eventID       MPDID,    APVID, TimesampleID, StripsID, ADC value
 			map <int, map < int, map < int, map<int, map < int, int > > > > > Single_Evnts_Return;
 			Single_Evnts_Return.insert(make_pair(Data_eventsID_temp,rdSingleEvent));
 			rdSingleEvent.clear();
 			return Single_Evnts_Return;
-
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		};
 
 		// MAROC block

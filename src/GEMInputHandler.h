@@ -1,6 +1,6 @@
 /*
  * GEMInputHandler.h
- *
+ *	mainly used for multi version and multi file Formate decode
  *  Created on: Oct 24, 2016
  *      Author: newdriver
  */

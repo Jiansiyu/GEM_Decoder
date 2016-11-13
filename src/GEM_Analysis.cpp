@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 
 		//test functions
 		TTree test_tree;
-		GEMRawFileDecoder *GEMRawFileDecoder_TEST=new GEMRawFileDecoder("test_0888.dat", &test_tree);
+		GEMRawFileDecoder *GEMRawFileDecoder_TEST=new GEMRawFileDecoder("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/Debug/test_0888.dat", &test_tree);
 		GEMRawFileDecoder_TEST->GEMRawFileDecoder_TestFunction();
 		theApp.Run(kTRUE);
 		return 0;
