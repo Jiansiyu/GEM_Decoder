@@ -54,7 +54,6 @@ GEMRawFileDecoder::~GEMRawFileDecoder() {
 }
 void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 	vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
-
 	FILE *Input_File_temp;
 	Input_File_temp = fopen(GEMRawFileDecoder_Raw_File.Data(), "rb");
 	if(Input_File_temp == 0) {
@@ -76,12 +75,12 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 		fread(&fileVersion_temp,sizeof(uint32_t),1,Input_File_temp);   // load the file version
 		fread(&fNumberSample_temp,sizeof(uint32_t),1,Input_File_temp);
 		fread(&fNumberAPV_temp,sizeof(uint32_t),1,Input_File_temp);
-		printf("[Test Variables]:: %s fileVersion=%x, fNumberSample=%d, InpHand_fNumberAPV = %d \n",__FUNCTION__, fileVersion_temp,fNumberSample_temp,fNumberAPV_temp);
+		//printf("[Test Variables]:: %s fileVersion=%x, fNumberSample=%d, InpHand_fNumberAPV = %d \n",__FUNCTION__, fileVersion_temp,fNumberSample_temp,fNumberAPV_temp);
 
 		if(fileVersion_temp == 5) {
-			printf("[RUN INFOR]:: %s Decoding the headers\n",__FUNCTION__);
+			//printf("[RUN INFOR]:: %s Decoding the headers\n",__FUNCTION__);
 			GEMInfor_Buffer_temp=GEMRawFileDecoder_ingestFileHeader(Input_File_temp, (int)fileVersion_temp, GEMInfor_Buffer_temp); // decoder the file header
-			printf("[RUN INFOR]:: %s Finish decoding the headers  %d MPD found, which match the setting\n",__FUNCTION__,GEMInfor_Buffer_temp.size());
+			//printf("[RUN INFOR]:: %s Finish decoding the headers  %d MPD found, which match the setting\n",__FUNCTION__,GEMInfor_Buffer_temp.size());
 
 			map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp;
 			while(feof(Input_File_temp)==0) {
@@ -138,14 +137,12 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
                 Canvas_Raw->cd(i+1);
                 sEvent_histo[i]->Draw();
                 //Canvas_Raw->Update();
-                
 			}
 			Canvas_Raw->Modified();
 			Canvas_Raw->Update();
 
 			getchar();
 			}
-
 		  }
 		else {
 				printf("[ERROR]:: _%s Unsupported file Version\n",__FUNCTION__);
@@ -157,8 +154,56 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 			printf("[ERROR]:: %s Unsupport fileID",__FUNCTION__);
 			exit(-1);
 	   }
-}
+};
 
+
+void GEMRawFileDecoder::GEMRawFileDecoder_Pedestal(int Entries_input){
+    vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
+    FILE *Input_File_temp;
+    Input_File_temp = fopen(GEMRawFileDecoder_Raw_File.Data(), "rb");
+    if(Input_File_temp == 0) {
+        printf("[ERROR]:: %s Error in loading the raw data file, maybe the raw data \"%s\"file does's exist\n",__FUNCTION__, GEMRawFileDecoder_Raw_File.Data());
+        exit(-1);
+    }
+    else {
+        printf("[RUN INFOR]:: %s loading file %s \n", __FUNCTION__, GEMRawFileDecoder_Raw_File.Data());
+    };
+    
+    uint32_t fileID_temp;
+    uint32_t fileVersion_temp;
+    uint32_t fNumberSample_temp;
+    uint32_t fNumberAPV_temp;
+    
+    fread(&fileID_temp, sizeof(uint32_t),1,Input_File_temp); // read the fileID
+    if(fileID_temp == BINARYFILE_ID){      // mactch the file ID
+        
+        fread(&fileVersion_temp,sizeof(uint32_t),1,Input_File_temp);   // load the file version
+        fread(&fNumberSample_temp,sizeof(uint32_t),1,Input_File_temp);
+        fread(&fNumberAPV_temp,sizeof(uint32_t),1,Input_File_temp);
+        //printf("[Test Variables]:: %s fileVersion=%x, fNumberSample=%d, InpHand_fNumberAPV = %d \n",__FUNCTION__, fileVersion_temp,fNumberSample_temp,fNumberAPV_temp);
+        
+        if(fileVersion_temp == 5) {
+            //printf("[RUN INFOR]:: %s Decoding the headers\n",__FUNCTION__);
+            GEMInfor_Buffer_temp=GEMRawFileDecoder_ingestFileHeader(Input_File_temp, (int)fileVersion_temp, GEMInfor_Buffer_temp); // decoder the file header
+            //printf("[RUN INFOR]:: %s Finish decoding the headers  %d MPD found, which match the setting\n",__FUNCTION__,GEMInfor_Buffer_temp.size());
+            
+            map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp;
+            while(feof(Input_File_temp)==0) {
+                SingleEvent_temp=GEMRawFileDecoder_SingleingestEventV5(Input_File_temp, GEMRawFileDecoder_Raw_File ,GEMInfor_Buffer_temp); // decoder the data
+                
+            }
+        }
+        else {
+            printf("[ERROR]:: _%s Unsupported file Version\n",__FUNCTION__);
+            exit(-1);
+        };
+        
+    }
+    else {
+        printf("[ERROR]:: %s Unsupport fileID",__FUNCTION__);
+        exit(-1);
+	   }
+}
 //
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_Run( vector<GEMInfor> GEMInfor_Buffer_Input) {
 
@@ -210,7 +255,7 @@ return GEMInfor_Buffer_temp;
 
 // file header decoder
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestFileHeader(FILE *file_input, int  fileVersion_input, vector<GEMInfor> GEMInfor_Buffer_Input) {
-	printf("[RUN INFOR]:: %s Start decoding the file header \n", __FUNCTION__);
+	//printf("[RUN INFOR]:: %s Start decoding the file header \n", __FUNCTION__);
 
 
 	if(GEMInfor_Buffer_Input.size()!=0){
@@ -229,11 +274,11 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestFileHeader(FILE *fil
 	uint32_t DATA_nMPD;       // number of MPDs
 	fread(&DATA_nMPD, sizeof(uint32_t),1,file_input);   // read the number of MPDs, in final, will double check with the size of the vector to returned.
 
-	printf("[RUN INFOR]:: %s Number of MPD detected  = %d\n",__FUNCTION__,DATA_nMPD);
+	//printf("[RUN INFOR]:: %s Number of MPD detected  = %d\n",__FUNCTION__,DATA_nMPD);
 
 	// loop all the MPDs. read all the configuration for the MPDs
 	for(int MPD_Loop_counter=0; MPD_Loop_counter < (int)DATA_nMPD ; MPD_Loop_counter++) {
-		printf("[TEST INFOR]:: %s Decoding MPD No.%d\n",__FUNCTION__,MPD_Loop_counter);
+		//printf("[TEST INFOR]:: %s Decoding MPD No.%d\n",__FUNCTION__,MPD_Loop_counter);
 		GEMInfor *GEMInfor_Buffer_temp= new GEMInfor();   // used for buffer one MPD data
 
 		uint32_t  DATA_MPDConfiguration;
@@ -265,7 +310,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestFileHeader(FILE *fil
 		GEMInfor_Buffer_temp->GEMInfor_fLevelOne       = (DATA_LevelConfiguration>>16)&0xfff;
 
 		for(unsigned int ADCchip_index=0; ADCchip_index<2; ADCchip_index++) {
-			printf("[RUN INFOR]:: %s Loading ADC gain\n",__FUNCTION__);
+			//printf("[RUN INFOR]:: %s Loading ADC gain\n",__FUNCTION__);
 			uint32_t DATA_ADCconfiguration;
 			fread(&DATA_ADCconfiguration,sizeof(uint32_t),1,file_input);
 			for(unsigned int ADC_channel_index_loop=0; ADC_channel_index_loop< 8 ; ADC_channel_index_loop++){
@@ -289,7 +334,7 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestFileHeader(FILE *fil
 
 		for (unsigned int APV_index_temp = 0; APV_index_temp < GEMInfor_Buffer_temp->GEMInfor_fApvCount; ++APV_index_temp) {
 
-			printf("[Test INFOR]:: Decoding APV %d/%d infor\n",APV_index_temp,GEMInfor_Buffer_temp->GEMInfor_fApvCount);
+			//printf("[Test INFOR]:: Decoding APV %d/%d infor\n",APV_index_temp,GEMInfor_Buffer_temp->GEMInfor_fApvCount);
 
 			GEMAPVinfor *GEMAPV_Buffer_temp= new GEMAPVinfor();      // temp buffer for APVinfor class
 
