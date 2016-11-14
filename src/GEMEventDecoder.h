@@ -24,11 +24,15 @@ public:
 	GEMEventDecoder(std::map <int, std::map <int, std::map < int, std::map< int, int > > > > SingleEvts_Input);
 	virtual ~GEMEventDecoder();
 public:
-	//Event ID, MPDID,    APVID     Tsample    Nstr  ADC
-	std::map<int, std::map <int, std::map <int, std::map < int, std::map< int, int > > > > > eDGetCommonMode();
-	std::map<int, std::map <int, std::map <int, std::map < int, std::map< int, int > > > > > eDGetCommonModeRmPk();   // remove peak first befor get the Common mode
-	std::map<int, std::map <int, std::map <int, std::map < int, std::map< int, int > > > > > eDGetSigma();
-	std::map<int, std::map <int, std::map <int, std::map < int, std::map< int, int > > > > > eDGetMean();
+	//      Event ID,      MPDID,         APVID            Tsample    CommonMode
+	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetCommonMode();
+	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetCommonModeRmPk();   // remove peak first befor get the Common mode
+	//      Event ID,      MPDID,         APVID             Nstrips   Sigma
+	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetSigma();
+	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetMean();
+	//Event ID, MPDID,    APVID      Nstr  ADC
+	std::map<int, std::map <int, std::map < int, std::map< int, int > > > > eDGetCommonModeSubtraction();
+
 
 	//MPDID,    APVID     Tsample    Nstr  ADC
 	//std::map <int, std::map <int, std::map < int, std::map< int, int > > > > eDGetCommonMode();

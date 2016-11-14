@@ -64,7 +64,6 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
      else {
 			printf("[RUN INFOR]:: %s loading file %s \n", __FUNCTION__, GEMRawFileDecoder_Raw_File.Data());
 	    };
-
 	uint32_t fileID_temp;
 	uint32_t fileVersion_temp;
 	uint32_t fNumberSample_temp;
@@ -106,23 +105,27 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 
 			itter_mpd=SingleEvent_temp.begin()->second.begin();
 			int Histo_counter=0;
-			TThread::Lock();
+
 			TH1F *sEvent_histo[NumberofAPV];
 			while(itter_mpd!=SingleEvent_temp.begin()->second.end()){   // loop on MPD
 				map < int, map<int, map < int, int > > > ::iterator ittter_apv=itter_mpd->second.begin();
 				while(ittter_apv!=itter_mpd->second.end()){                                               // loop on APV
-
+					TThread::Lock();
 					sEvent_histo[Histo_counter]= new TH1F(Form("Ev%d_MPD%d_APV%d",SingleEvent_temp.begin()->first,itter_mpd->first,ittter_apv->first),
 														Form("Ev%d_MPD%d_APV%d",SingleEvent_temp.begin()->first,itter_mpd->first,ittter_apv->first),
 														(SingleEvent_temp.begin()->second.begin()->second.begin()->second.size())*(128+2)-1,
 														0,
 														(SingleEvent_temp.begin()->second.begin()->second.begin()->second.size())*(128+2));
+					TThread::UnLock();
 
 					map<int, map < int, int > >::iterator itttter_Tsample=ittter_apv->second.begin();
 					while(itttter_Tsample!=ittter_apv->second.end()){
 						map < int, int >::iterator ittttter_Nstrips=itttter_Tsample->second.begin();
 						while(ittttter_Nstrips!=itttter_Tsample->second.end()){
+							TThread::Lock();
 							sEvent_histo[Histo_counter]->Fill((itttter_Tsample->first)*(128+2)+ittttter_Nstrips->first,ittttter_Nstrips->second);
+							TThread::UnLock();
+
 							ittttter_Nstrips++;
 						  }
 						  itttter_Tsample++;
@@ -132,7 +135,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 				}
 				itter_mpd++;
 			}
-			TThread::UnLock();
+
 
 			TCanvas *Canvas_Raw=new TCanvas(Form("Raw_Display_Canvas_Evt%d",SingleEvent_temp.begin()->first),Form(""),1000,1000);
 			Canvas_Raw->Divide(2,(int)NumberofAPV/2);
@@ -177,11 +180,18 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
         printf("[RUN INFOR]:: %s loading file %s \n", __FUNCTION__, GEMRawFileDecoder_Raw_File.Data());
     };
     
+    TThread::Lock();
+    // final result
+    map<int, map <int, TH1F* > > GEMEvts_PedestalMean;  //MPDID, APVID,TH1F(channel-128, Mean)
+    map<int, map <int, TH1F* > > GEMEvts_PedestalSigma; //MPDID, APVID,TH1F(channel-128, Sigma)
+    // used to get the final result
+    map<int, map<int, map<int, TH1F* > > > GEMEvts_PedestalHisto; //MPD, APVID, Channel, sigma of six sample
+    TThread::UnLock();
+
     uint32_t fileID_temp;
     uint32_t fileVersion_temp;
     uint32_t fNumberSample_temp;
     uint32_t fNumberAPV_temp;
-    
     fread(&fileID_temp, sizeof(uint32_t),1,Input_File_temp); // read the fileID
     if(fileID_temp == BINARYFILE_ID){      // mactch the file ID
         
@@ -194,11 +204,19 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
             //printf("[RUN INFOR]:: %s Decoding the headers\n",__FUNCTION__);
             GEMInfor_Buffer_temp=GEMRawFileDecoder_ingestFileHeader(Input_File_temp, (int)fileVersion_temp, GEMInfor_Buffer_temp); // decoder the file header
             
+
             map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp;
             while(feof(Input_File_temp)==0) {
                 SingleEvent_temp=GEMRawFileDecoder_SingleingestEventV5(Input_File_temp, GEMRawFileDecoder_Raw_File ,GEMInfor_Buffer_temp); // decoder the data
-                
+                GEMEventDecoder GEMSgEvntsDecode(SingleEvent_temp);
+                // eventID   MPD     APV   Tsample CommonMode
+                map<int, map<int, map<int, map<int,int > > > >SingleEvtsComMode_temp =GEMSgEvntsDecode.eDGetCommonModeRmPk();
+                // eventsID  MPD      APV     Nstrp Sigma
+                //map<int, map<int, map<int, map<int,int> > > > SingleEvtsSigma_temp=GEMSgEvntsDecode.
             }
+
+
+
         }
         else {
             printf("[ERROR]:: _%s Unsupported file Version\n",__FUNCTION__);

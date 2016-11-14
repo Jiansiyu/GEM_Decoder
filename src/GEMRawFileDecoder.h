@@ -51,7 +51,7 @@ public:
 public:
     void GEMRawFileDecoder_TestFunction();
 
-// private variables
+//private variables
 private:
 	TString  GEMRawFileDecoder_Raw_File;
 	int    GEMRawFileDecoder_EventsIndex=0; // buffer the current Evnts ID, used for the concurrent process
