@@ -23,6 +23,7 @@
 // user defined functions
 #include "GEMRawFileDecoder.h"
 #include "GEMInfor.h"           // GEM infor class
+#include "GEMEventDecoder.h"
 
 using namespace std;
 
@@ -192,7 +193,6 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
         if(fileVersion_temp == 5) {
             //printf("[RUN INFOR]:: %s Decoding the headers\n",__FUNCTION__);
             GEMInfor_Buffer_temp=GEMRawFileDecoder_ingestFileHeader(Input_File_temp, (int)fileVersion_temp, GEMInfor_Buffer_temp); // decoder the file header
-            //printf("[RUN INFOR]:: %s Finish decoding the headers  %d MPD found, which match the setting\n",__FUNCTION__,GEMInfor_Buffer_temp.size());
             
             map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp;
             while(feof(Input_File_temp)==0) {
@@ -211,6 +211,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
         exit(-1);
 	   }
 }
+
 //
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_Run( vector<GEMInfor> GEMInfor_Buffer_Input) {
 
@@ -256,7 +257,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_Run( vector<GEMInfor> GEMI
 		printf("[ERROR]:: %s Unsupport fileID",__FUNCTION__);
 		exit(-1);
 	}
-
 return GEMInfor_Buffer_temp;
 };
 
@@ -773,6 +773,15 @@ map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDeco
 			map <int, map < int, map < int, map<int, map < int, int > > > > > Single_Evnts_Return;
 			Single_Evnts_Return.insert(make_pair(Data_eventsID_temp,rdSingleEvent));
 			rdSingleEvent.clear();
+
+
+
+
+
+
+
+
+
 			return Single_Evnts_Return;
 		};
 
