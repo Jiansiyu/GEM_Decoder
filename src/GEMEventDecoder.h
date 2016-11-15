@@ -28,10 +28,11 @@ public:
 	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetCommonMode();
 	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetCommonModeRmPk();   // remove peak first befor get the Common mode
 	//      Event ID,      MPDID,         APVID             Nstrips   Sigma
-	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetSigma();
-	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetMean();
+	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetSigma( std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > CommonMode_Input );
+
+	//std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetMean();
 	//Event ID, MPDID,    APVID      Nstr  ADC
-	std::map<int, std::map <int, std::map < int, std::map< int, int > > > > eDGetCommonModeSubtraction();
+	//std::map<int, std::map <int, std::map < int, std::map< int, int > > > > eDGetCommonModeSubtraction();
 
 
 	//MPDID,    APVID     Tsample    Nstr  ADC
@@ -42,9 +43,9 @@ public:
 
 // private virables
 private:
-
+	std::map < int, std::map <int, std::map <int, std::map < int, std::map< int, int > > > > > SingleEvts;
 private:
-	std::map< int, int > eDRemovePeak(void *);
+	std::map< int, int > eDRemovePeak(map<int,int> SingleTSample_Input);
 
 
 };

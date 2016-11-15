@@ -210,7 +210,8 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
                 SingleEvent_temp=GEMRawFileDecoder_SingleingestEventV5(Input_File_temp, GEMRawFileDecoder_Raw_File ,GEMInfor_Buffer_temp); // decoder the data
                 GEMEventDecoder GEMSgEvntsDecode(SingleEvent_temp);
                 // eventID   MPD     APV   Tsample CommonMode
-                map<int, map<int, map<int, map<int,int > > > >SingleEvtsComMode_temp =GEMSgEvntsDecode.eDGetCommonModeRmPk();
+                map<int, map<int, map<int, map<int,int > > > >SingleEvtsComMode_temp =GEMSgEvntsDecode.eDGetCommonModeRmPk();   //get CommonMode After Remove the peaks
+
                 // eventsID  MPD      APV     Nstrp Sigma
                 //map<int, map<int, map<int, map<int,int> > > > SingleEvtsSigma_temp=GEMSgEvntsDecode.
             }
