@@ -208,15 +208,11 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
             map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp;
             while(feof(Input_File_temp)==0) {
                 SingleEvent_temp=GEMRawFileDecoder_SingleingestEventV5(Input_File_temp, GEMRawFileDecoder_Raw_File ,GEMInfor_Buffer_temp); // decoder the data
-                GEMEventDecoder GEMSgEvntsDecode(SingleEvent_temp);
-                // eventID   MPD     APV   Tsample CommonMode
-                map<int, map<int, map<int, map<int,int > > > >SingleEvtsComMode_temp =GEMSgEvntsDecode.eDGetCommonModeRmPk();   //get CommonMode After Remove the peaks
-
-                // eventsID  MPD      APV     Nstrp Sigma
-                //map<int, map<int, map<int, map<int,int> > > > SingleEvtsSigma_temp=GEMSgEvntsDecode.
+                GEMEventDecoder *GEMSgEvntsDecode=new GEMEventDecoder(SingleEvent_temp);
+                GEMSgEvntsDecode->eDGetCommonModeRmPk();
+                //printf("Evts=%d\n",SingleEvent_temp.begin()->first);
             }
-
-
+            printf("This is the end of the file\n");
 
         }
         else {
@@ -851,6 +847,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp, map< 
 // test functions
 void GEMRawFileDecoder::GEMRawFileDecoder_TestFunction(){
 	vector<GEMInfor> MPD_infor_test;
-	GEMRawFileDecoder_RawDisplay();
+	GEMRawFileDecoder_PedestalDecoder();
+	//GEMRawFileDecoder_RawDisplay();
 	//GEMRawFileDecoder_Run(MPD_infor_test);
 };
