@@ -3,6 +3,8 @@
  *
  *  Created on: Nov 3, 2016
  *      Author: newdriver
+ *
+ *      maybe a better way is change this to a namespace, will change it latter
  */
 
 #ifndef GEMCONFIG_H_
@@ -70,5 +72,5 @@ struct APV_DataStruct {
 		int StripADC[KMAX_NSAMPLE][KNSTRIPS];
 	};
 
-
+const int MAX_PEAKS_PEVNT=10;    // set the maximum peaks for single event and single APV
 #endif /* GEMCONFIG_H_ */

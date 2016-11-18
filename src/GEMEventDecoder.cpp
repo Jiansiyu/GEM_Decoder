@@ -10,6 +10,20 @@
 #include "TH1F.h"
 #include "TThread.h"
 #include "TCanvas.h"
+
+// root function used find the peak when calculate the old version pedetal
+#include "TMath.h"
+#include "TSpectrum.h"
+#include "TVirtualFitter.h"
+#include "TCanvas.h"
+#include "TMath.h"
+#include "TH1.h"
+#include "TF1.h"
+#include "TRandom.h"
+#include "TSpectrum.h"
+#include "TVirtualFitter.h"
+
+
 #include "GEMEventDecoder.h"
 #include "GEMConfig.h"
 using namespace std;
@@ -115,32 +129,46 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 
 };
 
-
+//    channels
 std::map< int, int > GEMEventDecoder::eDRemovePeak(map<int,int> SingleTSample_Input){
+
+	TCanvas *Canvas_Raw=new TCanvas(Form("Raw_Display_Canvas_Evt"),Form("S"),1000,1000);
+
 	std::map < int, int > SingleTSample_temp=SingleTSample_Input;
 	map<int,int>::iterator iter_Nstrps=SingleTSample_temp.begin();
 	map<int,int> SingleTSample_CorrectOder;
+	TH1F *SingleTSample_Histo=new TH1F("singleEvnt","singleEvnt",128,0,128);
+
 	while(iter_Nstrps!=SingleTSample_temp.end()) {
 		SingleTSample_CorrectOder[ChNb[iter_Nstrps->first]]=iter_Nstrps->second;   // change to the right order
+		SingleTSample_Histo->Fill(ChNb[iter_Nstrps->first],iter_Nstrps->second);
 		iter_Nstrps++;
 	};
-	TCanvas *Canvas_Raw=new TCanvas(Form("Raw_Display_Canvas_Evt"),Form("S"),1000,1000);
-	TH1F *Test=new TH1F("","",127,0,127);
-	iter_Nstrps=SingleTSample_CorrectOder.begin();
-	while (iter_Nstrps != SingleTSample_CorrectOder.end()) {
-		printf("Chns=%d, ADC=%d\n",iter_Nstrps->first,iter_Nstrps->second);
-		Test->Fill(iter_Nstrps->first,iter_Nstrps->second);
-		iter_Nstrps++;
+
+	// searching for the peaks
+	//TSpectrum *s = new TSpectrum(2*30);
+	TH1F *PeakSearch_Hito=(TH1F*) SingleTSample_Histo->Clone("h2");
+	TSpectrum *SingleTSample_peaksch = new TSpectrum(MAX_PEAKS_PEVNT);
+	int NfoundPeak=SingleTSample_peaksch->Search(PeakSearch_Hito,2,"",0.3);
+	float *PeakPos= SingleTSample_peaksch->GetPositionX();
+
+	//SingleTSample_Histo->GetMaximumStored();
+	//float *PeakHight=SingleTSample_peaksch->Get();
+	for(int i =0; i < NfoundPeak; i++){
+		printf("position= %d, mean=%f, sigma=%f\n",SingleTSample_Histo->GetXaxis()->FindBin(PeakPos[i]),SingleTSample_Histo->GetMean(),SingleTSample_Histo->GetRMS());//PeakHight[i]);
+		iter_Nstrps=SingleTSample_Input.begin();
 	}
+
+	Printf("find %d peaks\n",NfoundPeak);
 	Canvas_Raw->cd();
-	Test->Draw();
-	//Canvas_Raw->Update();
+	SingleTSample_Histo->Draw();
 	Canvas_Raw->Draw();
 	Canvas_Raw->Modified();
 	Canvas_Raw->Update();
 	getchar();
+	//sleep(1);
 	delete Canvas_Raw;
-	delete Test;
+	delete SingleTSample_Histo;
 	return SingleTSample_CorrectOder;
 }
 
