@@ -2,7 +2,7 @@
  * GEMEventDecoder.h
  *
  *  Created on: Nov 13, 2016
- *      Author: newdriver
+ *      Author: Siyu Jian
  *
  *      Main Event decode function,
  *    		generate CommenMode
@@ -27,8 +27,10 @@ public:
 	//      Event ID,      MPDID,         APVID            Tsample    CommonMode
 	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetCommonMode();
 	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetCommonModeRmPk();   // remove peak first befor get the Common mode
+
 	//      Event ID,      MPDID,         APVID             Nstrips   Sigma
 	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetSigma( std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > CommonMode_Input );
+	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetSigma();    // get the sigma of six time sample  used for calculate the pedestal
 
 	//std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetMean();
 	//Event ID, MPDID,    APVID      Nstr  ADC

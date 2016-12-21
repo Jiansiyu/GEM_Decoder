@@ -25,8 +25,8 @@ void Usage()
 {
 
 	}
-/*
- * //进行物理地址到程序地址的转换   输入物理地址，输出程序地址        输入范围0-127    输出范围0-127
+
+  //进行物理地址到程序地址的转换   输入物理地址，输出程序地址        输入范围0-127    输出范围0-127
 unsigned int process_physical_to_logical(unsigned int physical_addr)
   {
      unsigned char group_temp=physical_addr/8;
@@ -47,12 +47,12 @@ unsigned int process_logical_to_physical(unsigned int logical_addr)
              return i;
           }
     }
-*/
+
 int main(int argc, char **argv)
 {
 		TApplication theApp("App", &argc, argv);   //Root application framework
-		GEMInputHandler *GEMDecoderIuputHandler = new GEMInputHandler();
-		GEMDecoderIuputHandler->GEMInputHandler_TestFunctions();
+		//GEMInputHandler *GEMDecoderIuputHandler = new GEMInputHandler();
+		//GEMDecoderIuputHandler->GEMInputHandler_TestFunctions();
 		//test functions
 		TTree test_tree;
 		GEMRawFileDecoder *GEMRawFileDecoder_TEST=new GEMRawFileDecoder("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/Debug/test_2458.dat", &test_tree);

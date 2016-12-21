@@ -192,6 +192,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
     uint32_t fileVersion_temp;
     uint32_t fNumberSample_temp;
     uint32_t fNumberAPV_temp;
+
     fread(&fileID_temp, sizeof(uint32_t),1,Input_File_temp); // read the fileID
     if(fileID_temp == BINARYFILE_ID){      // mactch the file ID
         
@@ -204,13 +205,11 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
             //printf("[RUN INFOR]:: %s Decoding the headers\n",__FUNCTION__);
             GEMInfor_Buffer_temp=GEMRawFileDecoder_ingestFileHeader(Input_File_temp, (int)fileVersion_temp, GEMInfor_Buffer_temp); // decoder the file header
             
-
             map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp;
             while(feof(Input_File_temp)==0) {
                 SingleEvent_temp=GEMRawFileDecoder_SingleingestEventV5(Input_File_temp, GEMRawFileDecoder_Raw_File ,GEMInfor_Buffer_temp); // decoder the data
                 GEMEventDecoder *GEMSgEvntsDecode=new GEMEventDecoder(SingleEvent_temp);
-                GEMSgEvntsDecode->eDGetCommonModeRmPk();
-                //printf("Evts=%d\n",SingleEvent_temp.begin()->first);
+                GEMSgEvntsDecode->eDGetSigma();
             }
             printf("This is the end of the file\n");
 
@@ -555,7 +554,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 					    }
 					// finish data saving
 
-					break;
 				}
 
 				default:
@@ -778,25 +776,15 @@ map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDeco
 
 		};   //APV block Ended all
 
-
 		// End of Evnts
 		if((Data_temp&0xF0000000)== 0xE0000000) {
 
 			Data_eventsID_temp = Data_temp&0xFFFFFFF;
-			// this is the right place to save the single event data
+			//this is the right place to save the single event data
 			//eventID       MPDID,    APVID, TimesampleID, StripsID, ADC value
 			map <int, map < int, map < int, map<int, map < int, int > > > > > Single_Evnts_Return;
 			Single_Evnts_Return.insert(make_pair(Data_eventsID_temp,rdSingleEvent));
 			rdSingleEvent.clear();
-
-
-
-
-
-
-
-
-
 			return Single_Evnts_Return;
 		};
 
@@ -830,7 +818,6 @@ void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp, map< 
 
 				map<int,int>::iterator itttt_Nstrip=ittter_Tsample->second.begin();
 				while(itttt_Nstrip!=ittter_Tsample->second.end()){
-					//printf("EventID=%d,  MPD=%d,  APV=%d,  Tsample=%d,  NStrips=%d,   ADC=%d\n",EventID_index_temp,iter_mpd->first, itter_apv->first, ittter_Tsample->first,itttt_Nstrip->first,itttt_Nstrip->second);
 					GEMR_ApvStrData.StripADC[ittter_Tsample->first][itttt_Nstrip->first]=itttt_Nstrip->second;
 					itttt_Nstrip++;
 				}

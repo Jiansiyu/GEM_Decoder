@@ -2,7 +2,7 @@
  * GEMInfor.cpp
  *
  *  Created on: Oct 24, 2016
- *      Author: newdriver
+ *      Author: Siyu Jian
  */
 
 #include "GEMInfor.h"
