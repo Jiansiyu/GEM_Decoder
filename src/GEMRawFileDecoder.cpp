@@ -2,14 +2,21 @@
  * GEMRawFileDecoder.cpp
  *
  *  Created on: Oct 25, 2016
- *      Author: newdriver
+ *      Author: Siyu Jian
+ *  	email : jiansiyu@gmail.com
  *
  *
  */
 
 #include <stdio.h>
 #include <stdint.h>
+
+#include <stdint.h>
+
+#include <iostream>
 #include <fstream>
+#include <string>
+#include <algorithm>   // used for remove_if
 #include <vector>
 
 // ROOT functions
@@ -19,7 +26,7 @@
 #include "TH1.h"
 #include "TCanvas.h"
 #include "TThread.h"
-
+#include "TFile.h"
 // user defined functions
 #include "GEMRawFileDecoder.h"
 #include "GEMInfor.h"           // GEM infor class
@@ -54,6 +61,10 @@ GEMRawFileDecoder::~GEMRawFileDecoder() {
 	// TODO Auto-generated destructor stub
 }
 void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
+
+	TCanvas *Canvas_Raw=new TCanvas(Form("Raw_Display_Canvas_Evt"),Form("Raw display"),1000,1000);
+	Canvas_Raw->Divide(2,(int)4/2);
+
 	vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
 	FILE *Input_File_temp;
 	Input_File_temp = fopen(GEMRawFileDecoder_Raw_File.Data(), "rb");
@@ -123,7 +134,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 						map < int, int >::iterator ittttter_Nstrips=itttter_Tsample->second.begin();
 						while(ittttter_Nstrips!=itttter_Tsample->second.end()){
 							TThread::Lock();
-							sEvent_histo[Histo_counter]->Fill((itttter_Tsample->first)*(128+2)+ittttter_Nstrips->first,ittttter_Nstrips->second);
+							sEvent_histo[Histo_counter]->Fill((itttter_Tsample->first)*(128+2)+ChNb[ittttter_Nstrips->first],ittttter_Nstrips->second);
 							TThread::UnLock();
 
 							ittttter_Nstrips++;
@@ -137,8 +148,8 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 			}
 
 
-			TCanvas *Canvas_Raw=new TCanvas(Form("Raw_Display_Canvas_Evt%d",SingleEvent_temp.begin()->first),Form(""),1000,1000);
-			Canvas_Raw->Divide(2,(int)NumberofAPV/2);
+			//TCanvas *Canvas_Raw=new TCanvas(Form("Raw_Display_Canvas_Evt%d",SingleEvent_temp.begin()->first),Form(""),1000,1000);
+			//Canvas_Raw->Divide(2,(int)NumberofAPV/2);
 			for(int i=0; i<NumberofAPV; i++)
 			{
                 Canvas_Raw->cd(i+1);
@@ -150,7 +161,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 			Canvas_Raw->Update();
 
 			getchar();
-			delete Canvas_Raw;
+
 			for(int i =0; i < NumberofAPV; i++)
 				delete sEvent_histo[i];
 			}
@@ -165,11 +176,48 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 			printf("[ERROR]:: %s Unsupport fileID",__FUNCTION__);
 			exit(-1);
 	   }
+	delete Canvas_Raw;
 };
 
 
-void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
-    vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
+void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(string Pedestal_filename,int Entries_input){
+
+	// reading mapping file test
+	ifstream filestream("Mapping/temp_Mapping.cfg");
+	string  line;
+	int Mapping_mpdId,Mapping_ADCId,Mapping_I2C,Mapping_GEMId,Mapping_Xis,Mapping_Pos,Mapping_Invert;
+	map<int,map<int,vector<int> > > mMapping;
+
+	if(!filestream){
+		printf("[ERROR]::  %s error when try to open the mapping file\n",__FUNCTION__);
+		exit(-1);
+	}else {
+		printf("[INFOR]::  %s reading the mapping file\n",__FUNCTION__);
+	}
+	cout<<"MPDID"<<"	GEMID"<<"	Xis"<<"	ADCID"<<"	I2C"<<"	Pos"<<"	Invert"<<endl;
+	while(getline(filestream,line)){   // reading the mapping line by line
+		//cout<< line.c_str()<<endl;
+		line.erase(std::remove_if(line.begin(),line.end(), ::isspace),line.end());   // remove the space in the string
+		if(line.find("#")==0)continue;
+		char *tokens=strtok((char *)line.data(),",");// token one string before ,
+		if(tokens!=NULL) {
+			cout<<tokens<<"	";Mapping_mpdId=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_GEMId=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_Xis=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_ADCId=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_I2C=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_Pos=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_Invert=atoi(tokens);
+			mMapping[Mapping_mpdId][Mapping_I2C].push_back(Mapping_GEMId);//0
+			mMapping[Mapping_mpdId][Mapping_I2C].push_back(Mapping_Xis);//1
+			mMapping[Mapping_mpdId][Mapping_I2C].push_back(Mapping_Pos);//2
+			mMapping[Mapping_mpdId][Mapping_I2C].push_back(Mapping_Invert);//3
+		}
+	  cout<<endl;
+	}
+	// finish loading the mapping file
+
+	vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
     FILE *Input_File_temp;
     Input_File_temp = fopen(GEMRawFileDecoder_Raw_File.Data(), "rb");
     if(Input_File_temp == 0) {
@@ -180,18 +228,12 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
         printf("[RUN INFOR]:: %s loading file %s \n", __FUNCTION__, GEMRawFileDecoder_Raw_File.Data());
     };
     
-    TThread::Lock();
-    // final result
-    map<int, map <int, TH1F* > > GEMEvts_PedestalMean;  //MPDID, APVID,TH1F(channel-128, Mean)
-    map<int, map <int, TH1F* > > GEMEvts_PedestalSigma; //MPDID, APVID,TH1F(channel-128, Sigma)
-    // used to get the final result
-    map<int, map<int, map<int, TH1F* > > > GEMEvts_PedestalHisto; //MPD, APVID, Channel, sigma of six sample
-    TThread::UnLock();
-
     uint32_t fileID_temp;
     uint32_t fileVersion_temp;
     uint32_t fNumberSample_temp;
     uint32_t fNumberAPV_temp;
+    // ev    MPD       APV   nstrips Sigma
+    map<int,map<int,map<int,map<int,int> > > > Sigma_all;
 
     fread(&fileID_temp, sizeof(uint32_t),1,Input_File_temp); // read the fileID
     if(fileID_temp == BINARYFILE_ID){      // mactch the file ID
@@ -199,40 +241,170 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(int Entries_input){
         fread(&fileVersion_temp,sizeof(uint32_t),1,Input_File_temp);   // load the file version
         fread(&fNumberSample_temp,sizeof(uint32_t),1,Input_File_temp);
         fread(&fNumberAPV_temp,sizeof(uint32_t),1,Input_File_temp);
-        //printf("[Test Variables]:: %s fileVersion=%x, fNumberSample=%d, InpHand_fNumberAPV = %d \n",__FUNCTION__, fileVersion_temp,fNumberSample_temp,fNumberAPV_temp);
         
         if(fileVersion_temp == 5) {
-            //printf("[RUN INFOR]:: %s Decoding the headers\n",__FUNCTION__);
             GEMInfor_Buffer_temp=GEMRawFileDecoder_ingestFileHeader(Input_File_temp, (int)fileVersion_temp, GEMInfor_Buffer_temp); // decoder the file header
-            
-            map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp;
+
             while(feof(Input_File_temp)==0) {
+
+            	map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp; //single events
                 SingleEvent_temp=GEMRawFileDecoder_SingleingestEventV5(Input_File_temp, GEMRawFileDecoder_Raw_File ,GEMInfor_Buffer_temp); // decoder the data
-                GEMEventDecoder *GEMSgEvntsDecode=new GEMEventDecoder(SingleEvent_temp);
-                GEMSgEvntsDecode->eDGetSigma();
+                if(SingleEvent_temp.size()==1){
+                	GEMEventDecoder *GEMSgEvntsDecode=new GEMEventDecoder(SingleEvent_temp);
+                	// EvntID  MPD   APV    nstrips  Sigma
+                	map<int,map<int,map<int,map<int,int>>>> SingleEvent_sigma_temp=GEMSgEvntsDecode->eDGetSigma();
+                	Sigma_all.insert(make_pair(SingleEvent_sigma_temp.begin()->first,SingleEvent_sigma_temp.begin()->second));
+                	delete GEMSgEvntsDecode;
+                }
+                else{
+                printf("[%s(line%d)] unrecognized data package detected, ignore",__FUNCTION__, __LINE__);
+                continue;
+                }
             }
             printf("This is the end of the file\n");
-
         }
         else {
             printf("[ERROR]:: _%s Unsupported file Version\n",__FUNCTION__);
             exit(-1);
         };
-        
+        //cout<<"lalsasas"<<endl;
     }
     else {
         printf("[ERROR]:: %s Unsupport fileID",__FUNCTION__);
         exit(-1);
 	   }
+    cout<<"*************"<<endl;
+
+   // finish decoder all the data, start caclculate the pedestals for the program
+    TThread::Lock();
+    // final result
+    map<int, map <int, TH1F* > > GEMEvts_PedestalMean;  //MPDID, APVID,TH1F(channel-128, Mean)
+    map<int, map <int, TH1F* > > GEMEvts_PedestalSigma; //MPDID, APVID,TH1F(channel-128, Sigma)
+    // used to get the final result
+    // MPDID   APVID     chennals
+    map<int, map<int, map<int, TH1F* > > > GEMEvts_PedestalHisto; //MPD, APVID, Channel, sigma of six sample
+
+    map<int,map<int,vector<int> > >::iterator iter_mapping_mpd=mMapping.begin();
+    while(iter_mapping_mpd!=mMapping.end()) {
+    	map<int,vector<int> > ::iterator itter_mapping_apv=iter_mapping_mpd->second.begin();
+    	while(itter_mapping_apv!=iter_mapping_mpd->second.end()){
+    		//printf("[INFOR]:: initialize the result histogram  MPD%d APV%d\n",iter_mapping_mpd->first,itter_mapping_apv->first);
+    		GEMEvts_PedestalMean[iter_mapping_mpd->first][itter_mapping_apv->first]=new TH1F(Form("PedestalMean(offset)_mpd_%d_ch_%d",iter_mapping_mpd->first,itter_mapping_apv->first),Form("PedestalMean(offset)_mpd_%d_ch_%d",iter_mapping_mpd->first,itter_mapping_apv->first),128,0,128);
+    		GEMEvts_PedestalSigma[iter_mapping_mpd->first][itter_mapping_apv->first]=new TH1F(Form("PedestalRMS_mpd_%d_ch_%d",iter_mapping_mpd->first,itter_mapping_apv->first),Form("PedestalRMS_mpd_%d_ch_%d",iter_mapping_mpd->first,itter_mapping_apv->first),128,0,128);
+    		for(int i=0;i<128;i++){
+    			//printf("[INFOR]:: initialize the result histogram  MPD%d APV%d nstrips%d\n",iter_mapping_mpd->first,itter_mapping_apv->first,i);
+    			GEMEvts_PedestalHisto[iter_mapping_mpd->first][itter_mapping_apv->first][i]=new TH1F(Form("MPD%d_APV%d_CH%d\n",iter_mapping_mpd->first,itter_mapping_apv->first,i),Form("MPD%d_APV%d_CH%d\n",iter_mapping_mpd->first,itter_mapping_apv->first,i),8000,-2000,2000);
+    		}
+    		itter_mapping_apv++;
+    	}
+    	iter_mapping_mpd++;
+    }
+    TThread::UnLock();
+    printf("[%s(line%d)]  start calculate pedestals\n",__FUNCTION__,__LINE__);
+    /*
+    // test functions
+    map<int,map<int,map<int,map<int,int> > > >::iterator iter_events=Sigma_all.begin();
+    while(iter_events!=Sigma_all.end()){
+    	map<int,map<int,map<int,int> > >::iterator itter_mpd=iter_events->second.begin();
+    	while(itter_mpd!=iter_events->second.end()){
+    		map<int,map<int,int>>::iterator ittter_apv=itter_mpd->second.begin();
+    		while(ittter_apv!=itter_mpd->second.end()){
+    			map<int,int >::iterator itttter_nstrips=ittter_apv->second.begin();
+    			while(itttter_nstrips!=ittter_apv->second.end()){
+    				printf("EvID=%d, mpd=%d, apv=%d, ch=%d, sigma=%d\n", iter_events->first, itter_mpd->first,ittter_apv->first,itttter_nstrips->first,itttter_nstrips->second);
+    				itttter_nstrips++;
+    			}
+    			getchar();
+    			ittter_apv++;
+    		}
+    		//while()
+    		itter_mpd++;
+    	}
+    	iter_events++;
+    }
+    // end of test functions
+    */
+   /* for(int ch_counter=0; ch_counter<128; ch_counter++) {    // loop on all the MPDs
+    	// ev    MPD       APV   nstrips Sigma
+    	map<int,map<int,map<int,map<int,int> > > >::iterator iter_events=Sigma_all.begin();
+    	while(iter_events!=Sigma_all.end()){
+    		// loop on all the events
+    		map<int,map<int,vector<int> > >::iterator iter_mapping_mpd=mMapping.begin(); //mapping
+    		while(iter_mapping_mpd!=mMapping.end()){	//
+    			map<int,vector<int>>::iterator itter_mapping_apv=iter_mapping_mpd->second.begin();
+    			while(itter_mapping_apv!=iter_mapping_mpd->second.begin()){
+    				if(Sigma_all[iter_events->first][iter_mapping_mpd->first][itter_mapping_apv->first][ch_counter]!=NULL)
+    				GEMEvts_PedestalHisto[iter_mapping_mpd->first][itter_mapping_apv->first][ch_counter]->Fill(Sigma_all[iter_events->first][iter_mapping_mpd->first][itter_mapping_apv->first][ch_counter]);
+    				cout<<Sigma_all[iter_events->first][iter_mapping_mpd->first][itter_mapping_apv->first][ch_counter]<<endl;
+    				itter_mapping_apv++;
+    			}
+    			iter_mapping_mpd++;
+    		}
+    		iter_events++;
+    	}
+    }*/
+    //map<int, map<int, map<int, TH1F* > > > GEMEvts_PedestalHisto; //MPD, APVID, Channel, sigma of six sample
+            // ev    MPD       APV   nstrips Sigma
+    //    map<int,map<int,map<int,map<int,int> > > > Sigma_all;
+    iter_mapping_mpd=mMapping.begin(); //mapping
+    while(iter_mapping_mpd!=mMapping.end()){
+    	map<int,vector<int>>::iterator itter_mapping_apv=iter_mapping_mpd->second.begin();
+    	while(itter_mapping_apv!=iter_mapping_mpd->second.end()) {
+    		//printf("MPD=%d APV=%d\n",iter_mapping_mpd->first, itter_mapping_apv->first);
+    		// write the sigmain the histogram
+    		map<int,map<int,map<int,map<int,int> > > >::iterator iter_sigma_events=Sigma_all.begin();
+    		while(iter_sigma_events!=Sigma_all.end()){ // loop on all the events
+    			for(int nstrips_cpunter=0; nstrips_cpunter<128;nstrips_cpunter++){
+    				if((iter_sigma_events)->second[iter_mapping_mpd->first][itter_mapping_apv->first][nstrips_cpunter]!=NULL){
+    					//printf("sigma %d\n",(iter_sigma_events)->second[iter_mapping_mpd->first][itter_mapping_apv->first][nstrips_cpunter]);
+    					GEMEvts_PedestalHisto[iter_mapping_mpd->first][itter_mapping_apv->first][nstrips_cpunter]->Fill((iter_sigma_events)->second[iter_mapping_mpd->first][itter_mapping_apv->first][nstrips_cpunter]);
+    				}
+    			}
+    			iter_sigma_events++;
+    		}
+
+    		itter_mapping_apv++;
+    	}
+    	iter_mapping_mpd++;
+    }
+
+    map<int, map<int, map<int, TH1F* > > >::iterator iter_histo_mpd=GEMEvts_PedestalHisto.begin();
+    while(iter_histo_mpd!=GEMEvts_PedestalHisto.end()){
+    	map<int, map<int, TH1F* > >::iterator itter_histo_apv=iter_histo_mpd->second.begin();
+    	while(itter_histo_apv!=iter_histo_mpd->second.end()){
+    		map<int, TH1F* >::iterator ittter_histo_nstrips=itter_histo_apv->second.begin();
+    		while(ittter_histo_nstrips!=itter_histo_apv->second.end()){   // loop on all the  strips
+    			GEMEvts_PedestalMean[iter_histo_mpd->first][itter_histo_apv->first]->Fill(ittter_histo_nstrips->first,ittter_histo_nstrips->second->GetMean());
+    			GEMEvts_PedestalSigma[iter_histo_mpd->first][itter_histo_apv->first]->Fill(ittter_histo_nstrips->first,ittter_histo_nstrips->second->GetRMS());
+    			ittter_histo_nstrips++;
+    		}
+    		itter_histo_apv++;
+    	}
+    	iter_histo_mpd++;
+    }
+    // write the data in root file
+    printf("[%s(%d)] create root file\n",__FUNCTION__, __LINE__);
+    TFile *rootfile=new TFile(Pedestal_filename.c_str(),"RECREATE");
+    map<int, map<int, TH1F* >>::iterator iter_report_mpd=GEMEvts_PedestalMean.begin();
+    while(iter_report_mpd!=GEMEvts_PedestalMean.end()){
+    	map<int, TH1F* >::iterator itter_report_apv=iter_report_mpd->second.begin();
+    	while(itter_report_apv!=iter_report_mpd->second.end()){
+    		//itter_report_apv->second->Write();
+    		GEMEvts_PedestalMean[iter_report_mpd->first][itter_report_apv->first]->Write();
+    		GEMEvts_PedestalSigma[iter_report_mpd->first][itter_report_apv->first]->Write();
+    		itter_report_apv++;
+    	}
+    	iter_report_mpd++;
+    }
+    rootfile->Close();
 }
 
-//
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_Run( vector<GEMInfor> GEMInfor_Buffer_Input) {
 
 	vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
 
 	FILE *Input_File_temp;
-	Input_File_temp = fopen(GEMRawFileDecoder_Raw_File.Data(), "rb");
+	Input_File_temp = fopen(GEMRawFileDecoder_Raw_File.Data(), "r");
 	if(Input_File_temp == 0) {
 		printf("[ERROR]:: %s Error in loading the raw data file, maybe the raw data \"%s\"file does's exist\n",__FUNCTION__, GEMRawFileDecoder_Raw_File.Data());
 	    exit(-1);
@@ -278,25 +450,19 @@ return GEMInfor_Buffer_temp;
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestFileHeader(FILE *file_input, int  fileVersion_input, vector<GEMInfor> GEMInfor_Buffer_Input) {
 	//printf("[RUN INFOR]:: %s Start decoding the file header \n", __FUNCTION__);
 
-
 	if(GEMInfor_Buffer_Input.size()!=0){
 		printf("[ERROR]:: %s The input vector is not empty\n", __FUNCTION__ );
 	}
-
 	//double check the file version, used for the future multi-decoder
 	if(fileVersion_input!=5){
 		printf("[ERROR]:: %s File Version error\n",__FUNCTION__);
 		exit(-1);
 	};
-
 	uint32_t fDaqMode_temp;
 	fread(&fDaqMode_temp,sizeof(uint32_t),1,file_input);
 
 	uint32_t DATA_nMPD;       // number of MPDs
 	fread(&DATA_nMPD, sizeof(uint32_t),1,file_input);   // read the number of MPDs, in final, will double check with the size of the vector to returned.
-
-	//printf("[RUN INFOR]:: %s Number of MPD detected  = %d\n",__FUNCTION__,DATA_nMPD);
-
 	// loop all the MPDs. read all the configuration for the MPDs
 	for(int MPD_Loop_counter=0; MPD_Loop_counter < (int)DATA_nMPD ; MPD_Loop_counter++) {
 		//printf("[TEST INFOR]:: %s Decoding MPD No.%d\n",__FUNCTION__,MPD_Loop_counter);
@@ -338,20 +504,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestFileHeader(FILE *fil
 				GEMInfor_Buffer_temp->GEMInfor_fAdcGain.insert(make_pair(ADCchip_index*8+ADC_channel_index_loop, (DATA_ADCconfiguration>>(ADC_channel_index_loop*4))&0xf));
 			}
 		}
-
-		// test functions+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-		/*
-		 * map<int,int>::iterator iter_temp=GEMInfor_Buffer_temp->GEMInfor_fAdcGain.begin();
-		printf("[RUN INFOR]:: ADC Gain ");
-		unsigned int counter_temp=0;
-		while(iter_temp!= GEMInfor_Buffer_temp->GEMInfor_fAdcGain.end()) {
-
-			printf("Channel(%d)=: %d ",counter_temp++, iter_temp->second);
-			iter_temp++;
-		}
-		printf("\n");
-		*/
-		// test functions+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 		for (unsigned int APV_index_temp = 0; APV_index_temp < GEMInfor_Buffer_temp->GEMInfor_fApvCount; ++APV_index_temp) {
 
@@ -485,9 +637,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 					}
 					Data_APV_index = Data_temp&0xf;
 
-					//Data_CommonBase    = (Data_temp >> 6) & 0x800;
-					//printf("[Test Variables]::* First * %s APV infors=> EventsID=%d, IAPV=%d \n",__FUNCTION__,Data_eventsID_temp, Data_APV_index);
-					//Data_DCount=0;
 					Data_APV_SingleTimeSp_StrADC_temp.clear();
 					Run_Ctrl_TimeSample_Index++;
 					break;
@@ -569,36 +718,6 @@ vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_ingestEventV5(FILE *file_i
 		if((Data_temp&0xF0000000)== 0xE0000000) {
 
 			Data_eventsID_temp = Data_temp&0xFFFFFFF;
-			/*printf("************ event= %d\n", Data_eventsID_temp);
-			// this is the right place to save the single event data
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
-			// for debug test
-			//MPDID, APVID, TimesampleID, StripsID, ADC value
-			map< int , map < int , map < int, map< int,int > > > >::iterator iter=rdSingleEvent.begin();
-			while(iter!=rdSingleEvent.end())
-			{
-				printf("\n\n\n[INFOR]::  MPD=%d  %d APV attached\n", iter->first, (iter->second.size()));
-				map < int , map < int, map< int,int > > >::iterator itter=iter->second.begin();
-				while(itter!=iter->second.end()){
-					printf("       MPD=%d   APV=%d number of Sample=%d\n", iter->first,itter->first, itter->second.size());
-
-					map <int, map< int,int > >::iterator ittter=itter->second.begin();
-					while(ittter!=itter->second.end()) {
-						printf("           SampleID=%d Nstrips=%d\n",ittter->first, ittter->second.size());
-						map <int, int >:: iterator itttter=ittter->second.begin();
-						while(itttter!=ittter->second.end())
-						{
-							//printf("             Channle=%5d ADC=%5d\n",itttter->first, itttter->second);
-							itttter++;
-						  }
-						ittter++;
-					}
-					itter++;
-				}
-				 iter++;
-			}
-            // end of debug test
-             */
 			GEMRawFileDecoder_TreeSave(Data_eventsID_temp,rdSingleEvent);
 			rdSingleEvent.clear();
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -647,7 +766,6 @@ map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDeco
 			delete Data_UserData;
 			continue;
 		}
-
 		// trigger Event Header
 		if((Data_temp&0xF0000000)== 0x20000000) {
 			Data_eventsID_temp=Data_temp&0xFFFFFFF;
@@ -657,7 +775,6 @@ map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDeco
 			//printf("[RUN INFOR]:: eventID=%d, trigger pattern =%d \n",Data_eventsID_temp, (int)Data_triggerpatttern);
 			continue;
 		}
-
 		// APV Events header, one event data
 		if((Data_temp&0xF0000000)== 0xA0000000) {
 			Data_eventsID_temp=Data_temp&0xFFFFFFF;
@@ -783,11 +900,12 @@ map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDeco
 			//this is the right place to save the single event data
 			//eventID       MPDID,    APVID, TimesampleID, StripsID, ADC value
 			map <int, map < int, map < int, map<int, map < int, int > > > > > Single_Evnts_Return;
+			Single_Evnts_Return.clear();
+			//printf("[%s-line%d] eID=%d\n", __FUNCTION__,__LINE__,Data_eventsID_temp);
 			Single_Evnts_Return.insert(make_pair(Data_eventsID_temp,rdSingleEvent));
 			rdSingleEvent.clear();
 			return Single_Evnts_Return;
-		};
-
+		}
 		// MAROC block
 		if((Data_temp & 0xF0000000) == 0xB0000000) {
 			Data_eventsID_temp= Data_temp & 0xFFFFFFF;
@@ -801,6 +919,10 @@ map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDeco
 			continue;
 		}
 	}
+	// if the file is file is not completw it will return black array
+	map <int, map < int, map < int, map<int, map < int, int > > > > > Single_Evnts_Return;
+	return Single_Evnts_Return;
+	//printf("[%s-line%d] end of the file, maybe this is cash happen\n", __FUNCTION__,__LINE__);
 };
 
 ////                                                                           MPDID, APVID, TimesampleID, StripsID, ADC value
@@ -834,7 +956,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp, map< 
 // test functions
 void GEMRawFileDecoder::GEMRawFileDecoder_TestFunction(){
 	vector<GEMInfor> MPD_infor_test;
-	GEMRawFileDecoder_PedestalDecoder();
+	GEMRawFileDecoder_PedestalDecoder("test.root",-1);
 	//GEMRawFileDecoder_RawDisplay();
 	//GEMRawFileDecoder_Run(MPD_infor_test);
 };

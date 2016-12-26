@@ -2,7 +2,7 @@
  * GEMConfig.h
  *
  *  Created on: Nov 3, 2016
- *      Author: newdriver
+ *      Author: Siyu Jian
  *
  *      maybe a better way is change this to a namespace, will change it latter
  */
@@ -10,9 +10,13 @@
 #ifndef GEMCONFIG_H_
 #define GEMCONFIG_H_
 
+#include <vector>
+
 const unsigned int KMAX_NSAMPLE = 6;
 const unsigned int KNSTRIPS     = 128;
-
+const int APV_MAPPING[]= {
+		//MPDID    APVID(I2C)
+};
 const int ChNb[128] = {
 	    0,   32,   64,   96,    8,   40,   72,  104,
 	   16,   48,   80,  112,   24,   56,   88,  120,
@@ -32,6 +36,7 @@ const int ChNb[128] = {
 	   23,   55,   87,  119,   31,   63,   95,  127
 };
 
+// inverse mapping
 const int CHNb_LogicAddr[128]= {
 		   0,   16,   32,   48,   64,   80,   96,  112,
 		   4,   20,   36,   52,   68,   84,  100,  116,

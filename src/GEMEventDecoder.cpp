@@ -9,13 +9,13 @@
 // root
 #include "TH1F.h"
 #include "TThread.h"
-#include "TCanvas.h"
+//#include "TCanvas.h"
 
 // root function used find the peak when calculate the old version pedetal
 #include "TMath.h"
 #include "TSpectrum.h"
 #include "TVirtualFitter.h"
-#include "TCanvas.h"
+//#include "TCanvas.h"
 #include "TMath.h"
 #include "TH1.h"
 #include "TF1.h"
@@ -39,7 +39,6 @@ GEMEventDecoder::~GEMEventDecoder() {
 
 GEMEventDecoder::GEMEventDecoder(std::map < int, std::map <int, std::map <int, std::map < int, std::map< int, int > > > > > SingleEvts_Input) {
 	SingleEvts=SingleEvts_Input;	//
-	//printf("Evts=%d\n",SingleEvts_Input.begin()->first);
 
 };
 
@@ -52,7 +51,6 @@ GEMEventDecoder::GEMEventDecoder(std::map <int, std::map <int, std::map < int, s
 std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEventDecoder::eDGetCommonMode() {
 	// eventID, MPD     APV     Sample Comod
 	std::map < int, std::map < int, std::map < int, std::map< int,int > > > > CommonMode_Return;
-
 	std::map< int, std::map<int, std::map<int, std::map<int,int> > > >::iterator iter_mpd=SingleEvts.begin()->second.begin();
 	while(iter_mpd != SingleEvts.begin()->second.end()) {
 		map<int,map<int,map<int,int> > >::iterator itter_APV=iter_mpd->second.begin();
@@ -122,15 +120,6 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 				};
 				float Common_Mode_mean_temp=Common_mode_histo_temp->GetMean();
 				delete Back_ground_temp;
-				//printf()
-				/*Canvas_Raw->cd(1);
-				Single_Sample_temp->Draw();
-				Back_ground_temp->SetAxisColor(3);
-				Back_ground_temp->Draw("same");
-				Canvas_Raw->Modified();
-				Canvas_Raw->Update();
-
-				sleep(2);*/
 				delete Single_Sample_temp;
 
 				//eDRemovePeak((++ittter_Tsample)->second);
@@ -154,11 +143,13 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 	std::map < int, std::map < int, std::map < int, std::map< int,int > > > > CommonMode_Return;
 	std::map< int, std::map<int, std::map<int, std::map<int,int> > > >::iterator iter_mpd=SingleEvts.begin()->second.begin();
 	std::map<int,std::map<int,std::map<int,std::map<int,int> > > >MPDs_CommonSbtr_buffer_temp;
-	while(iter_mpd!=SingleEvts.begin()->second.end()) {
 
+	while(iter_mpd!=SingleEvts.begin()->second.end()) {
+		//printf("%s, TEST POINT 0\n",__FUNCTION__);
 		std::map<int, std::map<int, std::map<int,int> > >::iterator itter_apv=iter_mpd->second.begin();
 		//   APV   Tsample  Nstrp ADC
 		map<int,map<int,map<int,int> > > APVs_CommonSbtr_buffer_temp;
+		//printf("%s, TEST POINT 01\n",__FUNCTION__);
 		while(itter_apv!=iter_mpd->second.end()) {	// loop on the apvs
 			// six time sample StripID, ADC value
 			std::map<int,map<int,int> >SingleAPV_RemovePeak_Buffer_temp;
@@ -168,7 +159,6 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 				SingleAPV_RemovePeak_Buffer_temp.insert(make_pair(ittter_TSample->first,eDRemovePeak(ittter_TSample->second)));
 				ittter_TSample++;
 			}
-
 			//common mode subtraction
 			std::map<int,map<int,int> > SingleAPV_RemovePeak_CommonMDSubtr_Buffer_temp;
 			std::map<int,map<int,int> >::iterator iter_tsample_temp=SingleAPV_RemovePeak_Buffer_temp.begin();
@@ -181,21 +171,17 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 				float Common_Mode_temp=0;
 				while(itter_nstrips_temp!=iter_tsample_temp->second.end()){
 					Sum_temp=Sum_temp+(itter_nstrips_temp->second);
-					//printf("Sum=%f, Strips=%d, ADC=%d\n",Sum_temp,itter_nstrips_temp->first,itter_nstrips_temp->second);
 					Counter_temp++;
 					itter_nstrips_temp++;
 				}
 				Common_Mode_temp=Sum_temp/((float)Counter_temp);    // get the common mode
 				// finish calculation common mode
-
 				// common mode subtraction
 				itter_nstrips_temp=iter_tsample_temp->second.begin();
 				std::map<int,int> Single_sample_temp;
 				while(itter_nstrips_temp!=iter_tsample_temp->second.end()) {
-					//printf("nstrips=%d,adc=%d\n",itter_nstrips_temp->first,itter_nstrips_temp->second-(int)Common_Mode_temp);
 					Single_sample_temp.insert(make_pair(itter_nstrips_temp->first,itter_nstrips_temp->second-(int)Common_Mode_temp));
 					itter_nstrips_temp++;
-					//SingleAPV_RemovePeak_CommonMDSubtr_Buffer_temp.insert(make_pair(iter_tsample_temp->first));
 				}
 				SingleAPV_RemovePeak_CommonMDSubtr_Buffer_temp.insert(make_pair(iter_tsample_temp->first,Single_sample_temp));
 				iter_tsample_temp++;
@@ -207,11 +193,45 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 		MPDs_CommonSbtr_buffer_temp.insert(make_pair(iter_mpd->first,APVs_CommonSbtr_buffer_temp));
 		iter_mpd++;
 	}
+	//printf("%s, TEST POINT 2\n",__FUNCTION__);
 	// finish calculater commonmode subtraction
 	// start calculate sigma
+	//      MPD           APV         Timesample  NSTR  ADC
+	iter_mpd=MPDs_CommonSbtr_buffer_temp.begin();
+	map<int,map<int,map<int,int> > > MPDs_sigma_buffer_temp;
+	while(iter_mpd!=MPDs_CommonSbtr_buffer_temp.end()) {
+		std::map<int,std::map<int,map<int,int> > >::iterator itter_APVs=iter_mpd->second.begin();
+		map<int,map<int,int> > APVs_sigma_buffer_temp;
+		while(itter_APVs!=iter_mpd->second.end()) {
 
+			map<int,int> Ch_sigma_buffer_temp;
+			for(int i =0 ; i <128; i ++) {
 
-
+				TH1F *Sigma_histo_temp=new TH1F("Sigma_histo_temp","Sigma_histo_temp",8192,-4096,4096);
+				map<int,map<int,int>>::iterator ittter_tsample=itter_APVs->second.begin();
+				//cout<<"asasasa****  "<<itter_APVs->second.size()<<endl;
+				while(ittter_tsample!=itter_APVs->second.end()) {
+					if(ittter_tsample->second[i]!=NULL){
+						Sigma_histo_temp->Fill(ittter_tsample->second[i]);
+					   }else
+						 {
+							break;
+						 }
+					ittter_tsample++;
+				    }
+				// if all the (maybe 6) timesamples have effective data
+				if(Sigma_histo_temp->GetEntries()==itter_APVs->second.size()){
+					Ch_sigma_buffer_temp.insert(make_pair(i,Sigma_histo_temp->GetRMS()));
+				}
+				delete Sigma_histo_temp;
+			}
+			APVs_sigma_buffer_temp.insert(make_pair(itter_APVs->first,Ch_sigma_buffer_temp));
+			itter_APVs++;
+		}
+		MPDs_sigma_buffer_temp.insert(make_pair(iter_mpd->first,APVs_sigma_buffer_temp));
+		iter_mpd++;
+	}
+	CommonMode_Return.insert(make_pair(SingleEvts.begin()->first,MPDs_sigma_buffer_temp));
 	return CommonMode_Return;
 
 };
@@ -241,9 +261,8 @@ std::map< int, int > GEMEventDecoder::eDRemovePeak(map<int,int> SingleTSample_In
 
 		TH1F *PeakSearch_Hito=(TH1F*) SingleTSample_Histo->Clone("h2");
 		TSpectrum *SingleTSample_peaksch = new TSpectrum(MAX_PEAKS_PEVNT);
-		int NfoundPeak=SingleTSample_peaksch->Search(PeakSearch_Hito,2,"",0.05);
+		int NfoundPeak=SingleTSample_peaksch->Search(PeakSearch_Hito,2,"",0.05);    // create defaut canvas here????
 		float *PeakPos= SingleTSample_peaksch->GetPositionX();
-
 		vector<int> Remove_table_temp;
 		for(int i =0; i < NfoundPeak; i++){
 				for(int j=-9; j<9; j++) {
@@ -253,11 +272,13 @@ std::map< int, int > GEMEventDecoder::eDRemovePeak(map<int,int> SingleTSample_In
 							(SingleTSample_Histo->GetBinContent(SingleTSample_Histo->GetXaxis()->FindBin(PeakPos[i]))>800)&&
 							(NfoundPeak<5)&&
 							(SingleTSample_Histo->GetBinContent(SingleTSample_Histo->GetMaximumBin())>900)
-							){
+							)
+					{
+
 						Remove_table_temp.push_back(SingleTSample_Histo->GetXaxis()->FindBin(PeakPos[i])+j);			}
 				}
-			}
 
+			}
 		vector<int>::iterator Remove_table_iter=Remove_table_temp.begin();
 		for(;Remove_table_iter<Remove_table_temp.end();Remove_table_iter++){
 			SingleTSample_temp.erase(CHNb_LogicAddr[*Remove_table_iter]);
@@ -281,11 +302,6 @@ std::map< int, int > GEMEventDecoder::eDRemovePeak(map<int,int> SingleTSample_In
 		Single_Sample_return=SingleTSample_temp;
 	}
 
-	/*map<int,int>::iterator iter_test=Single_Sample_return.begin();
-	while(iter_test!=Single_Sample_return.end()) {
-		printf("Strips=%d,  ADC=%d \n",iter_test->first,iter_test->second);
-		iter_test++;
-	}*/
 	delete SingleTSamplerm_Histo;
 	delete SingleTSample_Histo;
 	return Single_Sample_return;
