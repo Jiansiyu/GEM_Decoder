@@ -403,6 +403,9 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
 	Hit->Branch("adc5",adc5,"adc5[nch]/I");
 	//end of initialize root tree to store hits
 
+	// loading the pedestals
+	TFile *pedestal_root=new TFile(pedestal_file.c_str(),"READ");
+
 	// start decode the raw file
 	vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
     FILE *Input_File_temp;
@@ -433,6 +436,36 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
             	map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp; //single events
                 SingleEvent_temp=GEMRawFileDecoder_SingleingestEventV5(Input_File_temp, GEMRawFileDecoder_Raw_File ,GEMInfor_Buffer_temp); // decoder the data
                 if(SingleEvent_temp.size()==1){
+
+
+                	GEMEventDecoder *GEMSgEvntsDecode=new GEMEventDecoder(SingleEvent_temp);
+                	map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_CommonModesubtr=GEMSgEvntsDecode->eDCommonModeSubtr();
+                	// finish common mode subtraction, ready apply zero subtraction
+                	map <int, map < int, map < int, map<int, map < int, int > > > > > ::iterator iter_events=SingleEvent_CommonModesubtr.begin();
+                	while(iter_events!=SingleEvent_CommonModesubtr.end()){
+                		map < int, map < int, map<int, map < int, int > > > >::iterator itter_mpd=iter_events->second.begin();
+                		while(itter_mpd!=iter_events->second.end()) {
+                			map < int, map<int, map < int, int > > >::iterator ittter_apvs=itter_mpd->second.begin();
+                			while(ittter_apvs!= itter_mpd->second.end()){   // loops on the apvs
+                				map<int, map < int, int > >::iterator itttter_tsample=ittter_apvs->second.begin();
+                				//loading the pedestal of the apvs
+                				TH1F *hMean=(TH1F*) pedestal_root->Get(Form("PedestalMean(offset)_mpd_%d_ch_%d",itter_mpd->first,ittter_apvs->first));
+                				TH1F *hRMS =(TH1F*) pedestal_root->Get(Form("PedestalRMS_mpd_%d_ch_%d",itter_mpd->first,ittter_apvs->first));
+                				while(itttter_tsample!=ittter_apvs->second.end()){
+
+
+
+
+
+
+                					itttter_tsample++;
+                				}
+                				ittter_apvs++;
+                			}
+                			itter_mpd++;
+                		}
+                		iter_events++;
+                	}
 
                 }
                 else{

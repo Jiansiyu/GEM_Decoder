@@ -15,7 +15,7 @@
 #include "TMath.h"
 #include "TSpectrum.h"
 #include "TVirtualFitter.h"
-//#include "TCanvas.h"
+#include "TCanvas.h"
 #include "TMath.h"
 #include "TH1.h"
 #include "TF1.h"
@@ -81,56 +81,189 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 	return CommonMode_Return;
 };
 
+std::map <int, std::map < int, std::map < int, std::map<int, std::map < int, int > > > > > GEMEventDecoder::eDCommonModeSubtr() {
+	std::map <int, std::map < int, std::map < int, std::map<int, std::map < int, int > > > > > sEvent_Return;
+
+	//cout<<SingleEvts.begin()->first<<endl;
+	std::map< int, std::map<int, std::map<int, std::map<int,int> > > >::iterator iter_mpd=SingleEvts.begin()->second.begin();
+	std::map< int, std::map<int, std::map<int, std::map<int,int> > > > mpd_buffer;
+	while(iter_mpd!= SingleEvts.begin()->second.end()){
+		std::map<int, std::map<int, std::map<int,int> > >::iterator itter_apvs=iter_mpd->second.begin();
+		std::map<int, std::map<int, std::map<int,int> > > APVs_buffer;
+		while(itter_apvs!= iter_mpd->second.end()){
+			std::map<int, std::map<int,int> > ::iterator ittter_tsamples=itter_apvs->second.begin();
+			std::map<int, std::map<int,int> > tSamples_buffer; // used for return data
+			while(ittter_tsamples!=itter_apvs->second.end()){  // loop on the mpds
+
+				TH1F *Single_Sample_temp=new TH1F("Single_sample","Single_sample",128,0,128);
+				std::map<int,int>::iterator itttter_nstrips=ittter_tsamples->second.begin();
+				while(itttter_nstrips!=ittter_tsamples->second.end()){
+					Single_Sample_temp->Fill(ChNb[itttter_nstrips->first],itttter_nstrips->second);
+					itttter_nstrips++;
+				}
+				TSpectrum *SingleTSample_peaksch = new TSpectrum(MAX_PEAKS_PEVNT);
+				TH1 *background_level0=SingleTSample_peaksch->Background(Single_Sample_temp,20,"");
+				TH1F *Commonmode_histo_temp=new TH1F("commonmode","commonmode",4000,-2000,2000);
+
+				for(Int_t strips_counter_temp=background_level0->GetXaxis()->GetFirst();strips_counter_temp<=background_level0->GetXaxis()->GetLast();strips_counter_temp++){
+					if(background_level0->GetBinContent(strips_counter_temp)<EVENTS_THR){
+						Commonmode_histo_temp->Fill(background_level0->GetBinContent(strips_counter_temp));
+						}
+				}
+				float CommonMode_temp=Commonmode_histo_temp->GetMean();
+				//cout<<(int)CommonMode_temp<<endl;
+				itttter_nstrips=ittter_tsamples->second.begin();
+				std::map<int,int> sgSample_buffer;
+				while(itttter_nstrips!=ittter_tsamples->second.end()) {
+					sgSample_buffer.insert(make_pair(itttter_nstrips->first,itttter_nstrips->second-(int)CommonMode_temp));
+					//printf("nstrips=%d,adc=%d\n",itttter_nstrips->first,itttter_nstrips->second-(int)CommonMode_temp);
+					itttter_nstrips++;
+				}
+				tSamples_buffer.insert(make_pair(ittter_tsamples->first,sgSample_buffer));
+				//printf("first bin maybe =%d, last bin =%d\n",background_level0->GetYaxis()->GetFirst(),background_level0->GetXaxis()->GetLast());
+				delete Commonmode_histo_temp;
+				delete background_level0;
+				delete SingleTSample_peaksch;
+				delete Single_Sample_temp;
+				ittter_tsamples++;
+			}
+			APVs_buffer.insert(make_pair(itter_apvs->first,tSamples_buffer));
+
+			itter_apvs++;
+		}
+		mpd_buffer.insert(make_pair(iter_mpd->first,APVs_buffer));
+		iter_mpd++;
+	}
+	//sEvent_Return.insert(make_pair(SingleEvts.begin()->first,mpd_buffer));
+
+
+/*	// check function
+	iter_mpd=sEvent_Return.begin()->second.begin();
+	while(iter_mpd!=sEvent_Return.begin()->second.end()){
+		std::map<int, std::map<int, std::map<int,int> > >::iterator itter_apvs=iter_mpd->second.begin();
+		while(itter_apvs!=iter_mpd->second.end()){
+			std::map<int, std::map<int,int> > ::iterator ittter_tsample=itter_apvs->second.begin();
+			while(ittter_tsample!=itter_apvs->second.end()){
+				std::map<int,int>::iterator itttter_nstrips=ittter_tsample->second.begin();
+				while(itttter_nstrips!=ittter_tsample->second.end()){
+					cout<<"EvntsID"<<SingleEvts.begin()->first<<"MPD="<<iter_mpd->first<<" APV="<<itter_apvs->first<<" Tsample="<<ittter_tsample->first<<" nstrips="<<itttter_nstrips->first<< "  ADC"<<itttter_nstrips->second<<endl;
+
+					itttter_nstrips++;
+				}
+				ittter_tsample++;
+			}
+			itter_apvs++;
+		}
+		iter_mpd++;
+	}
+	// end of check function
+	*/
+	return sEvent_Return;
+}
 
 // remove peak first before get the Common mode
 //      Event ID,      MPDID,         APVID            Tsample    CommonMode
 std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEventDecoder::eDGetCommonModeRmPk() {
-	//TCanvas *Canvas_Raw=new TCanvas("canvas","canvas",1000,1000);
-	//Canvas_Raw->Divide(2,2);
-
 	// eventID, MPD     APV     Sample Comod
 	std::map < int, std::map < int, std::map < int, std::map< int,int > > > > CommonMode_Return;
 
 	std::map< int, std::map<int, std::map<int, std::map<int,int> > > >::iterator iter_mpd=SingleEvts.begin()->second.begin();
-	while(iter_mpd != SingleEvts.begin()->second.end()) {
-		map<int,map<int,map<int,int> > >::iterator itter_APV=iter_mpd->second.begin();
-		while(itter_APV!=iter_mpd->second.end()) {
+	std::map< int, std::map<int, std::map<int, std::map<int,int> > > > mpd_buffer;
 
-			map<int,map<int,int> >::iterator ittter_Tsample=itter_APV->second.begin();
-			while(ittter_Tsample!=itter_APV->second.end()) {
-				map<int,int>::iterator itttter_sgsimple=ittter_Tsample->second.begin();
+	while(iter_mpd!= SingleEvts.begin()->second.end()){
+
+		std::map<int, std::map<int, std::map<int,int> > >::iterator itter_apvs=iter_mpd->second.begin();
+		std::map<int, std::map<int, std::map<int,int> > > APVs_buffer;
+		while(itter_apvs!= iter_mpd->second.end()){
+
+
+			std::map<int, std::map<int,int> > ::iterator ittter_tsamples=itter_apvs->second.begin();
+			std::map<int, std::map<int,int> > tSamples_buffer; // used for return data
+			while(ittter_tsamples!=itter_apvs->second.end()){  // loop on the mpds
 
 				TH1F *Single_Sample_temp=new TH1F("Single_sample","Single_sample",128,0,128);
-				while(itttter_sgsimple!=ittter_Tsample->second.end()){
-					//if(itttter_sgsimple->second<EVENTS_THR)
-					{    // only buffer the background candidate,(because the efficiency to estimate the eadge is not good)
-						Single_Sample_temp->Fill(ChNb[itttter_sgsimple->first],itttter_sgsimple->second);
-					};
-					itttter_sgsimple++;
+				std::map<int,int>::iterator itttter_nstrips=ittter_tsamples->second.begin();
+				while(itttter_nstrips!=ittter_tsamples->second.end()){
+					Single_Sample_temp->Fill(ChNb[itttter_nstrips->first],itttter_nstrips->second);
+					itttter_nstrips++;
+				}
+				TSpectrum *SingleTSample_peaksch = new TSpectrum(MAX_PEAKS_PEVNT);
+				TH1 *background_level0=SingleTSample_peaksch->Background(Single_Sample_temp,20,"");
+				TH1F *Commonmode_histo_temp=new TH1F("commonnmode","commonmode",8000,-4000,4000);
+				for(Int_t strips_counter_temp=background_level0->GetXaxis()->GetFirst();strips_counter_temp<=background_level0->GetXaxis()->GetLast();strips_counter_temp++){
+					if(background_level0->GetBinContent(strips_counter_temp)<EVENTS_THR){
+						Commonmode_histo_temp->Fill(background_level0->GetBinContent(strips_counter_temp));
+						}
+				}
+				float CommonMode_temp=Commonmode_histo_temp->GetMean();
+				cout<<(int)CommonMode_temp<<endl;
+				itttter_nstrips=ittter_tsamples->second.begin();
+				std::map<int,int> sgSample_buffer;
+				while(itttter_nstrips!=ittter_tsamples->second.end()) {
+					sgSample_buffer.insert(make_pair(itttter_nstrips->first,itttter_nstrips->second-(int)CommonMode_temp));
+					//printf("nstrips=%d,adc=%d\n",itttter_nstrips->first,itttter_nstrips->second-(int)CommonMode_temp);
+					itttter_nstrips++;
 				}
 
-				TSpectrum *SingleTSample_peaksch = new TSpectrum(MAX_PEAKS_PEVNT);
-				TH1 *Back_ground_temp=SingleTSample_peaksch->Background(Single_Sample_temp,20,"");
-				std::cout<<Back_ground_temp->GetXaxis()->GetLast()<<endl;
-				TH1F *Common_mode_histo_temp=new TH1F("common_mode","common_mode",128,0,128);
-				for(int i=Back_ground_temp->GetXaxis()->GetFirst(); i<=Back_ground_temp->GetXaxis()->GetLast();i++){
-					if(Back_ground_temp->GetBinContent(i)<EVENTS_THR) {
-						Common_mode_histo_temp->Fill(Back_ground_temp->GetBinContent(i));
-					}
-				};
-				float Common_Mode_mean_temp=Common_mode_histo_temp->GetMean();
-				delete Back_ground_temp;
+				tSamples_buffer.insert(make_pair(ittter_tsamples->first,sgSample_buffer));
+				//printf("first bin maybe =%d, last bin =%d\n",background_level0->GetYaxis()->GetFirst(),background_level0->GetXaxis()->GetLast());
+				delete Commonmode_histo_temp;
+				delete SingleTSample_peaksch;
 				delete Single_Sample_temp;
-
-				//eDRemovePeak((++ittter_Tsample)->second);
-
-				ittter_Tsample++;
+				ittter_tsamples++;
 			}
+			APVs_buffer.insert(make_pair(itter_apvs->first,tSamples_buffer));
 
-			itter_APV++;
+			itter_apvs++;
 		}
+		mpd_buffer.insert(make_pair(iter_mpd->first,APVs_buffer));
 		iter_mpd++;
 	}
+
+	//CommonMode_Return.insert(SingleEvts.begin()->first,mpd_buffer);
+	//	while(iter_mpd != SingleEvts.begin()->second.end()) {
+//
+//		map<int,map<int,map<int,int> > >::iterator itter_APV=iter_mpd->second.begin();
+//
+//		while(itter_APV!=iter_mpd->second.end()) {
+//
+//			map<int,map<int,int> >::iterator ittter_Tsample=itter_APV->second.begin();
+//			while(ittter_Tsample!=itter_APV->second.end()) {
+//				map<int,int>::iterator itttter_sgsimple=ittter_Tsample->second.begin();
+//
+//				TH1F *Single_Sample_temp=new TH1F("Single_sample","Single_sample",128,0,128);
+//
+//				while(itttter_sgsimple!=ittter_Tsample->second.end()){
+//					//if(itttter_sgsimple->second<EVENTS_THR)
+//					{    // only buffer the background candidate,(because the efficiency to estimate the eadge is not good)
+//						Single_Sample_temp->Fill(ChNb[itttter_sgsimple->first],itttter_sgsimple->second);
+//					};
+//					itttter_sgsimple++;
+//				}
+//
+//				TSpectrum *SingleTSample_peaksch = new TSpectrum(MAX_PEAKS_PEVNT);
+//				TH1 *Back_ground_temp=SingleTSample_peaksch->Background(Single_Sample_temp,20,"");
+//				std::cout<<Back_ground_temp->GetXaxis()->GetLast()<<endl;
+//				TH1F *Common_mode_histo_temp=new TH1F("common_mode","common_mode",128,0,128);
+//				for(int i=Back_ground_temp->GetXaxis()->GetFirst(); i<=Back_ground_temp->GetXaxis()->GetLast();i++){
+//					if(Back_ground_temp->GetBinContent(i)<EVENTS_THR) {
+//						Common_mode_histo_temp->Fill(Back_ground_temp->GetBinContent(i));
+//					}
+//				delete SingleTSample_peaksch;
+//				};
+//				float Common_Mode_mean_temp=Common_mode_histo_temp->GetMean();
+//				delete Back_ground_temp;
+//				delete Single_Sample_temp;
+//
+//				//eDRemovePeak((++ittter_Tsample)->second);
+//
+//				ittter_Tsample++;
+//			}
+//
+//			itter_APV++;
+//		}
+//		iter_mpd++;
+//	}
 	return CommonMode_Return;
 };
 

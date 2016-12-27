@@ -24,6 +24,9 @@ public:
 	GEMEventDecoder(std::map <int, std::map <int, std::map < int, std::map< int, int > > > > SingleEvts_Input);
 	virtual ~GEMEventDecoder();
 public:
+	//        Eid             MPD             APVs           Tsample      Nstrips  ADC   return the data after common mode subtraction
+	std::map <int, std::map < int, std::map < int, std::map<int, std::map < int, int > > > > > eDCommonModeSubtr();
+
 	//      Event ID,      MPDID,         APVID            Tsample    CommonMode
 	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetCommonMode();
 	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetCommonModeRmPk();   // remove peak first befor get the Common mode
