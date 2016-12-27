@@ -40,8 +40,8 @@ public://
 
     void GEMRawFileDecoder_RawDisplay(int Entries_input=-1);
     void GEMRawFileDecoder_PedestalDecoder(string Pedestal_filename,int Entries_input=-1);    //
-    void GEMRawFileDecoder_ZeroSubtractionDisplay();
-    void GEMRawFileDecoder_HistoDecoder();
+    void GEMRawFileDecoder_ZeroSubtractionDisplay(int Entries_input=-1);
+    void GEMRawFileDecoder_HistoDecoder(string pedestal_file,string output_file, int Entries_input=-1);
     //report functions
 public:
     void GEMRawFileDecoder_TreeSave(int EventID_index_temp,map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent_Input);    // generate the tree files
