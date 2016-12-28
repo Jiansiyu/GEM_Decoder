@@ -578,7 +578,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
     delete[] adc5 ;
 }
 
-void GEMRawFileDecoder::GEMRawFileDecoder_ZeroSubtractionDisplay(string pedestal_file,string output_file, int Entries_input) {
+void GEMRawFileDecoder::GEMRawFileDecoder_ZeroSubtractionDisplay(string pedestal_file, int Entries_input) {
 
 	// reading mapping file test
 	ifstream filestream("Mapping/temp_Mapping.cfg");
@@ -1321,7 +1321,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp, map< 
 // test functions
 void GEMRawFileDecoder::GEMRawFileDecoder_TestFunction(){
 	vector<GEMInfor> MPD_infor_test;
-	GEMRawFileDecoder_ZeroSubtractionDisplay("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/test.root","test_out.root",-1);
+	//GEMRawFileDecoder_ZeroSubtractionDisplay("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/test.root","test_out.root",-1);
 	//GEMRawFileDecoder_PedestalDecoder("test.root",-1);
 	//GEMRawFileDecoder_RawDisplay();
 	//GEMRawFileDecoder_Run(MPD_infor_test);
