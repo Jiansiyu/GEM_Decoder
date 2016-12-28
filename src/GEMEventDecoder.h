@@ -33,7 +33,7 @@ public:
 
 	//      Event ID,      MPDID,         APVID             Nstrips   Sigma
 	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetSigma( std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > CommonMode_Input );
-	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetSigma();    // get the sigma of six time sample  used for calculate the pedestal
+	std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetMean(unsigned int RemovePeakFlag=1);    // get the sigma of six time sample  used for calculate the pedestal
 
 	//std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > eDGetMean();
 	//Event ID, MPDID,    APVID      Nstr  ADC

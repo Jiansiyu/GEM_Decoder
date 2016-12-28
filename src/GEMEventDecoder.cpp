@@ -83,10 +83,10 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 
 std::map <int, std::map < int, std::map < int, std::map<int, std::map < int, int > > > > > GEMEventDecoder::eDCommonModeSubtr() {
 	std::map <int, std::map < int, std::map < int, std::map<int, std::map < int, int > > > > > sEvent_Return;
-
 	//cout<<SingleEvts.begin()->first<<endl;
 	std::map< int, std::map<int, std::map<int, std::map<int,int> > > >::iterator iter_mpd=SingleEvts.begin()->second.begin();
 	std::map< int, std::map<int, std::map<int, std::map<int,int> > > > mpd_buffer;
+
 	while(iter_mpd!= SingleEvts.begin()->second.end()){
 		std::map<int, std::map<int, std::map<int,int> > >::iterator itter_apvs=iter_mpd->second.begin();
 		std::map<int, std::map<int, std::map<int,int> > > APVs_buffer;
@@ -132,34 +132,13 @@ std::map <int, std::map < int, std::map < int, std::map<int, std::map < int, int
 		iter_mpd++;
 	}
 	sEvent_Return.insert(make_pair(SingleEvts.begin()->first,mpd_buffer));
-
-/*	// check function
-	iter_mpd=sEvent_Return.begin()->second.begin();
-	while(iter_mpd!=sEvent_Return.begin()->second.end()){
-		std::map<int, std::map<int, std::map<int,int> > >::iterator itter_apvs=iter_mpd->second.begin();
-		while(itter_apvs!=iter_mpd->second.end()){
-			std::map<int, std::map<int,int> > ::iterator ittter_tsample=itter_apvs->second.begin();
-			while(ittter_tsample!=itter_apvs->second.end()){
-				std::map<int,int>::iterator itttter_nstrips=ittter_tsample->second.begin();
-				while(itttter_nstrips!=ittter_tsample->second.end()){
-					cout<<"EvntsID"<<SingleEvts.begin()->first<<"MPD="<<iter_mpd->first<<" APV="<<itter_apvs->first<<" Tsample="<<ittter_tsample->first<<" nstrips="<<itttter_nstrips->first<< "  ADC"<<itttter_nstrips->second<<endl;
-
-					itttter_nstrips++;
-				}
-				ittter_tsample++;
-			}
-			itter_apvs++;
-		}
-		iter_mpd++;
-	}
-	// end of check function
-	*/
 	return sEvent_Return;
 }
 
+
 // remove peak first before get the Common mode
 //      Event ID,      MPDID,         APVID            Tsample    CommonMode
-std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEventDecoder::eDGetCommonModeRmPk() {
+/*std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEventDecoder::eDGetCommonModeRmPk() {
 	// eventID, MPD     APV     Sample Comod
 	std::map < int, std::map < int, std::map < int, std::map< int,int > > > > CommonMode_Return;
 
@@ -261,31 +240,32 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 //		iter_mpd++;
 //	}
 	return CommonMode_Return;
-};
+};*/
 
 //      Event ID,      MPDID,         APVID             Nstrips   Sigma
-std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEventDecoder::eDGetSigma() {
-
-	//TCanvas *Canvas_Raw=new TCanvas("canvas","canvas",1000,1000);
-	//Canvas_Raw->Divide(2,2);
+std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEventDecoder::eDGetMean(unsigned int RemovePeakFlag) {
 	//         eventID,        MPD             APV         strips 	sigma
 	std::map < int, std::map < int, std::map < int, std::map< int,int > > > > CommonMode_Return;
 	std::map< int, std::map<int, std::map<int, std::map<int,int> > > >::iterator iter_mpd=SingleEvts.begin()->second.begin();
 	std::map<int,std::map<int,std::map<int,std::map<int,int> > > >MPDs_CommonSbtr_buffer_temp;
 
 	while(iter_mpd!=SingleEvts.begin()->second.end()) {
-		//printf("%s, TEST POINT 0\n",__FUNCTION__);
 		std::map<int, std::map<int, std::map<int,int> > >::iterator itter_apv=iter_mpd->second.begin();
 		//   APV   Tsample  Nstrp ADC
 		map<int,map<int,map<int,int> > > APVs_CommonSbtr_buffer_temp;
-		//printf("%s, TEST POINT 01\n",__FUNCTION__);
 		while(itter_apv!=iter_mpd->second.end()) {	// loop on the apvs
 			// six time sample StripID, ADC value
 			std::map<int,map<int,int> >SingleAPV_RemovePeak_Buffer_temp;
 			std::map<int, std::map<int,int> >::iterator ittter_TSample=itter_apv->second.begin();
 
 			while(ittter_TSample!=itter_apv->second.end()) {  // loop on all the six time sample and remove the peak in each time sample
-				SingleAPV_RemovePeak_Buffer_temp.insert(make_pair(ittter_TSample->first,eDRemovePeak(ittter_TSample->second)));
+				if(RemovePeakFlag==1){
+					SingleAPV_RemovePeak_Buffer_temp.insert(make_pair(ittter_TSample->first,eDRemovePeak(ittter_TSample->second)));
+				}else
+				{
+					SingleAPV_RemovePeak_Buffer_temp.insert(make_pair(ittter_TSample->first,ittter_TSample->second));
+				}
+
 				ittter_TSample++;
 			}
 			//common mode subtraction
@@ -337,7 +317,7 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 			for(int i =0 ; i <128; i ++) {
 
 				TH1F *Sigma_histo_temp=new TH1F("Sigma_histo_temp","Sigma_histo_temp",8192,-4096,4096);
-				map<int,map<int,int>>::iterator ittter_tsample=itter_APVs->second.begin();
+				map<int,map<int,int> >::iterator ittter_tsample=itter_APVs->second.begin();
 				//cout<<"asasasa****  "<<itter_APVs->second.size()<<endl;
 				while(ittter_tsample!=itter_APVs->second.end()) {
 					if(ittter_tsample->second[i]!=NULL){
@@ -362,12 +342,6 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 	}
 	CommonMode_Return.insert(make_pair(SingleEvts.begin()->first,MPDs_sigma_buffer_temp));
 	return CommonMode_Return;
-
-};
-
-//      Event ID,      MPDID,         APVID             Nstrips   Sigma
-std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEventDecoder::eDGetSigma(std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > CommonMode_Input) {
-
 };
 
 //    channels  ADC
@@ -390,7 +364,7 @@ std::map< int, int > GEMEventDecoder::eDRemovePeak(map<int,int> SingleTSample_In
 
 		TH1F *PeakSearch_Hito=(TH1F*) SingleTSample_Histo->Clone("h2");
 		TSpectrum *SingleTSample_peaksch = new TSpectrum(MAX_PEAKS_PEVNT);
-		int NfoundPeak=SingleTSample_peaksch->Search(PeakSearch_Hito,2,"",0.05);    // create defaut canvas here????
+		int NfoundPeak=SingleTSample_peaksch->Search(PeakSearch_Hito,2,"nodraw",0.05);    // create defaut canvas here????
 		float *PeakPos= SingleTSample_peaksch->GetPositionX();
 		vector<int> Remove_table_temp;
 		for(int i =0; i < NfoundPeak; i++){
@@ -421,9 +395,10 @@ std::map< int, int > GEMEventDecoder::eDRemovePeak(map<int,int> SingleTSample_In
 			SingleTSamplerm_Histo->Fill(ChNb[iter_Nstrps->first],iter_Nstrps->second);
 			iter_Nstrps++;
 		   };
-		if(SingleTSamplerm_Histo->GetBinContent(SingleTSamplerm_Histo->GetMaximumBin())<900){
+		if(SingleTSamplerm_Histo->GetBinContent(SingleTSamplerm_Histo->GetMaximumBin())<EVENTS_THR){
 			Single_Sample_return=SingleTSample_temp;
 		}
+
 		delete PeakSearch_Hito;
 		delete SingleTSample_peaksch;
 	}

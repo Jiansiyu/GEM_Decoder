@@ -39,7 +39,7 @@ public://
 	vector<GEMInfor> GEMRawFileDecoder_Run(std::vector<GEMInfor> GEMInfor_Buffer_Input);    // main decoder function
 
     void GEMRawFileDecoder_RawDisplay(int Entries_input=-1);
-    void GEMRawFileDecoder_PedestalDecoder(string Pedestal_filename,int Entries_input=-1);    //
+    void GEMRawFileDecoder_PedestalDecoder(string Pedestal_filename,unsigned int RemovePeakFlag=1,int Entries_input=-1);    //
     void GEMRawFileDecoder_ZeroSubtractionDisplay(string pedestal_file,string output_file, int Entries_input=-1);
     void GEMRawFileDecoder_HistoDecoder(string pedestal_file,string output_file, int Entries_input=-1);
     //report functions

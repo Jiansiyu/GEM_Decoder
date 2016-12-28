@@ -175,7 +175,9 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 	   }
 	delete Canvas_Raw;
 };
-void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(string Pedestal_filename,int Entries_input){
+
+void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(string Pedestal_filename,unsigned int RemovePeakFlag,int Entries_input){
+	printf("\n\n Pedestal mode runing\n\n");
 	// reading mapping file test
 	ifstream filestream("Mapping/temp_Mapping.cfg");
 	string  line;
@@ -239,10 +241,11 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(string Pedestal_filena
             while(feof(Input_File_temp)==0) {
             	map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp; //single events
                 SingleEvent_temp=GEMRawFileDecoder_SingleingestEventV5(Input_File_temp, GEMRawFileDecoder_Raw_File ,GEMInfor_Buffer_temp); // decoder the data
+                cout<<SingleEvent_temp.begin()->first<<endl;
                 if(SingleEvent_temp.size()==1){
                 	GEMEventDecoder *GEMSgEvntsDecode=new GEMEventDecoder(SingleEvent_temp);
                 	// EvntID  MPD   APV    nstrips  Sigma
-                	map<int,map<int,map<int,map<int,int>>>> SingleEvent_sigma_temp=GEMSgEvntsDecode->eDGetSigma();
+                	map<int,map<int,map<int,map<int,int> > > > SingleEvent_sigma_temp=GEMSgEvntsDecode->eDGetMean(RemovePeakFlag);
                 	Sigma_all.insert(make_pair(SingleEvent_sigma_temp.begin()->first,SingleEvent_sigma_temp.begin()->second));
                 	delete GEMSgEvntsDecode;
                 }
@@ -289,7 +292,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(string Pedestal_filena
     printf("[%s(line%d)]  start calculate pedestals\n",__FUNCTION__,__LINE__);
     iter_mapping_mpd=mMapping.begin(); //mapping
     while(iter_mapping_mpd!=mMapping.end()){
-    	map<int,vector<int>>::iterator itter_mapping_apv=iter_mapping_mpd->second.begin();
+    	map<int,vector<int> >::iterator itter_mapping_apv=iter_mapping_mpd->second.begin();
     	while(itter_mapping_apv!=iter_mapping_mpd->second.end()) {
     		// write the sigmain the histogram
     		map<int,map<int,map<int,map<int,int> > > >::iterator iter_sigma_events=Sigma_all.begin();
@@ -322,7 +325,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_PedestalDecoder(string Pedestal_filena
     // write the data in root file
     printf("[%s(%d)] create root file\n",__FUNCTION__, __LINE__);
     TFile *rootfile=new TFile(Pedestal_filename.c_str(),"RECREATE");
-    map<int, map<int, TH1F* >>::iterator iter_report_mpd=GEMEvts_PedestalMean.begin();
+    map<int, map<int, TH1F* > >::iterator iter_report_mpd=GEMEvts_PedestalMean.begin();
     while(iter_report_mpd!=GEMEvts_PedestalMean.end()){
     	map<int, TH1F* >::iterator itter_report_apv=iter_report_mpd->second.begin();
     	while(itter_report_apv!=iter_report_mpd->second.end()){
@@ -430,6 +433,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
         fread(&fileVersion_temp,sizeof(uint32_t),1,Input_File_temp);   // load the file version
         fread(&fNumberSample_temp,sizeof(uint32_t),1,Input_File_temp);
         fread(&fNumberAPV_temp,sizeof(uint32_t),1,Input_File_temp);
+
         if(fileVersion_temp == 5) {
             GEMInfor_Buffer_temp=GEMRawFileDecoder_ingestFileHeader(Input_File_temp, (int)fileVersion_temp, GEMInfor_Buffer_temp); // decoder the file header
             while(feof(Input_File_temp)==0) {
@@ -453,9 +457,8 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
                             	   //loading the pedestal of the apvs
                             	   TH1F *hMean=(TH1F*) pedestal_root->Get(Form("PedestalMean(offset)_mpd_%d_ch_%d",itter_mpd->first,ittter_apvs->first));
                             	   TH1F *hRMS =(TH1F*) pedestal_root->Get(Form("PedestalRMS_mpd_%d_ch_%d",itter_mpd->first,ittter_apvs->first));
+
                             	   map<int, map < int, int > >::iterator itttter_tsample=ittter_apvs->second.begin();
-
-
                             	   // maybe there will be errors in special case
                             	   for(unsigned int nstrips_counter=0; nstrips_counter < itttter_tsample->second.size();nstrips_counter++){
                             		   //printf("%d\n",nstrips_counter);
@@ -467,7 +470,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
                             			   itttter_tsample_temp++;
                             		   }
                             		   sum_temp=sum_temp/((float)ittter_apvs->second.size())-hMean->GetBinContent(nstrips_counter+1);
-                            		   if(sum_temp>50*(hRMS->GetBinContent(nstrips_counter+1))){
+                            		   if(sum_temp>5*(hRMS->GetBinContent(nstrips_counter+1))){
                             			   itttter_tsample_temp=ittter_apvs->second.begin();
                             			   while(itttter_tsample_temp!=ittter_apvs->second.end()){ // six time samples
                             				   // position tranverse
@@ -479,8 +482,6 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
                             				   int planeID=mMapping[itter_mpd->first][ittter_apvs->first][1];
 
                             				   mmHit[detID][planeID][RstripPos].push_back(itttter_tsample_temp->second[nstrips_counter]-hMean->GetBinContent(nstrips_counter+1));
-                            				   // here is a good position to add the zero subtraction display function
-
                             				   //cout<<RstripPos<<endl;
                             				   itttter_tsample_temp++;
                             			   }
@@ -508,7 +509,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
 
                     		vector<int> stripVector;
                     		//map<int,vector<int>> sDimension_temp=itter_planeid->second;
-                    		map<int,vector<int>>::iterator ittter_pos=itter_planeid->second.begin();
+                    		map<int, vector< int > >::iterator ittter_pos=itter_planeid->second.begin();
                     		while(ittter_pos!=itter_planeid->second.end()){
                     			stripVector.push_back(ittter_pos->first);
                     			ittter_pos++;
@@ -528,8 +529,6 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
                     			VplaneID[nstrip]=planeid;
                     			nstrip++;
                     		}
-
-
                     		itter_planeid++;
                     	}
                     	iter_detid++;
@@ -539,7 +538,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
                     if(nch!=0) {
                     	Hit->Fill();
                     }
-
+                    delete GEMSgEvntsDecode;
                 }
                 else{
                 printf("[%s(line%d)] unrecognized data package detected, ignore",__FUNCTION__, __LINE__);
@@ -565,6 +564,8 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
     Hit_rootfile->Write();
     Hit_rootfile->Close();
 
+    delete pedestal_root;
+    delete Hit;
     delete Hit_rootfile;
     delete[] Vstrip;
     delete[] VdetID;
@@ -612,7 +613,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_ZeroSubtractionDisplay(string pedestal
 	}
 	filestream.close();
     //finish loading the mapping
-	TCanvas *Canvas_display=new TCanvas("ZeroSubtraction","ZeroSubtraction",1000,1000);
+	TCanvas *Canvas_display=new TCanvas("ZeroSubtraction","ZeroSubtraction",1800,1000);
 	Canvas_display->Divide(2,2);
 
 
@@ -654,10 +655,10 @@ void GEMRawFileDecoder::GEMRawFileDecoder_ZeroSubtractionDisplay(string pedestal
 
                 if(SingleEvent_temp.size()==1){
 
-                	TH1F* ZeroSubtraction_histo_x=new TH1F("ZeroSubtraction_histo_x","ZeroSubtraction_histo_x",500,0,500);
-                	TH1F* ZeroSubtraction_histo_y=new TH1F("ZeroSubtraction_histo_y","ZeroSubtraction_histo_y",500,0,500);
-                	TH1F* RawData_histo_x=new TH1F("RawData_histo_x","RawData_histo_x",500,0,500);
-                	TH1F* RawData_histo_y=new TH1F("RawData_histo_y","RawData_histo_y",500,0,500);
+                	TH1F* ZeroSubtraction_histo_x=new TH1F("ZeroSubtraction_histo_x","ZeroSubtraction_histo_x",256,0,256);
+                	TH1F* ZeroSubtraction_histo_y=new TH1F("ZeroSubtraction_histo_y","ZeroSubtraction_histo_y",256,0,256);
+                	TH1F* RawData_histo_x=new TH1F("RawData_histo_x","RawData_histo_x",256,0,256);
+                	TH1F* RawData_histo_y=new TH1F("RawData_histo_y","RawData_histo_y",256,0,256);
 
                 	// detID    planeID  strips  six time sample
                 	map<int, map<int, map<int, vector<int> > > > mmHit;    // used for buffer the final result for single events
