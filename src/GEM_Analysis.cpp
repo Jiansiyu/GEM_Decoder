@@ -24,39 +24,27 @@ using namespace std;
 void Usage()
 {
 
-	}
+  }
 
-  //进行物理地址到程序地址的转换   输入物理地址，输出程序地址        输入范围0-127    输出范围0-127
-unsigned int process_physical_to_logical(unsigned int physical_addr)
-  {
-     unsigned char group_temp=physical_addr/8;
-     unsigned char number_in_group_temp=physical_addr%8;
-     unsigned int logical_addr_base=0;
-     unsigned int logical_addr=0;
-
-     logical_addr_base= (unsigned char)( group_temp/4)+( group_temp%4)*4;
-     logical_addr= logical_addr_base+ number_in_group_temp*16;
-     return logical_addr;
-    };
-//进行程序地址到物理地址的转换
-unsigned int process_logical_to_physical(unsigned int logical_addr)
-   {
-      for(unsigned char i=0;i<128;i++)
-        {
-           if(logical_addr==process_physical_to_logical(i))
-             return i;
-          }
-    }
 
 int main(int argc, char **argv)
 {
 		TApplication theApp("App", &argc, argv);   //Root application framework
 
 		// mapping reading function
-
 		TTree test_tree;
-		GEMRawFileDecoder *GEMRawFileDecoder_TEST=new GEMRawFileDecoder("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/Debug/test_2385.dat", &test_tree);
-		GEMRawFileDecoder_TEST->GEMRawFileDecoder_TestFunction();
+		for(int i=2260; i<2266; i ++){
+			//GEMRawFileDecoder *GEMRawFileDecoder_TEST=new GEMRawFileDecoder(Form("/home/newdriver/Research/GEM_Analsys_CIAE/Data/test_%d.dat",i), &test_tree);
+			GEMRawFileDecoder *GEMRawFileDecoder_TEST=new GEMRawFileDecoder(Form("/media/newdriver/data/DATA\ back_up/APV_data/ihep_spatial_resolution/resolution_x_data/test_%d.dat",i), &test_tree);
+			printf("/home/newdriver/Research/GEM_Analsys_CIAE/Data/test_%d.dat\n",i);
+			GEMRawFileDecoder_TEST->GEMRawFileDecoder_PedestalDecoder(Form("pedestal_%4d.root",i),-1);
+			//GEMRawFileDecoder_TEST->GEMRawFileDecoder_ZeroSubtractionDisplay(Form("pedestal_%4d.root",i),Form("/home/newdriver/Research/GEM_Analsys_CIAE/Result/spacial/Decoder/test_result_%d.root",i),-1);
+			GEMRawFileDecoder_TEST->GEMRawFileDecoder_HistoDecoder(Form("pedestal_%4d.root",i),Form("/home/newdriver/Research/GEM_Analsys_CIAE/Result/spacial/Decoder/test_result_%d.root",i),-1);
+
+			//GEMRawFileDecoder_TEST->GEMRawFileDecoder_TestFunction();
+			delete GEMRawFileDecoder_TEST;
+
+		}
 		//theApp.Run(kTRUE);
 		return 0;
 }

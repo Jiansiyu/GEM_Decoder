@@ -6,21 +6,18 @@
 CPP_SRCS += \
 ../src/GEMEventDecoder.cpp \
 ../src/GEMInfor.cpp \
-../src/GEMInputHandler.cpp \
 ../src/GEMRawFileDecoder.cpp \
 ../src/GEM_Analysis.cpp 
 
 OBJS += \
 ./src/GEMEventDecoder.o \
 ./src/GEMInfor.o \
-./src/GEMInputHandler.o \
 ./src/GEMRawFileDecoder.o \
 ./src/GEM_Analysis.o 
 
 CPP_DEPS += \
 ./src/GEMEventDecoder.d \
 ./src/GEMInfor.d \
-./src/GEMInputHandler.d \
 ./src/GEMRawFileDecoder.d \
 ./src/GEM_Analysis.d 
 

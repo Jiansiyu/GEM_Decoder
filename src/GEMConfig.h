@@ -66,5 +66,5 @@ struct APV_DataStruct {
 	};
 
 const int MAX_PEAKS_PEVNT=20;    // set the maximum peaks for single event and single APV
-const int EVENTS_THR  =850;
+const int EVENTS_THR  =1000;
 #endif /* GEMCONFIG_H_ */

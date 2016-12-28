@@ -387,27 +387,27 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
 	adc4	=new Int_t[2000];
 	adc5	=new Int_t[2000];
 
-	TFile *Hit_rootfile=new TFile(output_file.c_str(),"RECREATE");
+
 	TTree *Hit=new TTree("GEMHit","Hit list");
 	Hit->Branch("evtID",&EvtID,"evtID/I");	     // event ID, start from 1
 	Hit->Branch("nch",&nch,"nch/I");                   // how many channels been fired at one time
-	Hit->Branch("strip",Vstrip,"strip[nch]/I");	     // number of strips that been fired
+	Hit->Branch("strip",Vstrip,"strip[nch]/I");	     // position
 	Hit->Branch("detID",VdetID,"detID[nch]/I");        // detector ID ? used for multi-detector case ?  always 0 in this case
 	Hit->Branch("planeID",VplaneID,"planeID[nch]/I");  // plan ID
 
-	Hit->Branch("adc0",adc0,"adc0[nch]/I");            // six samples
+	Hit->Branch("adc0",adc0,"adc0[nch]/I");            // six samples, to be improve to meet the requirement of any number of time samples
 	Hit->Branch("adc1",adc1,"adc1[nch]/I");
 	Hit->Branch("adc2",adc2,"adc2[nch]/I");
 	Hit->Branch("adc3",adc3,"adc3[nch]/I");
 	Hit->Branch("adc4",adc4,"adc4[nch]/I");
 	Hit->Branch("adc5",adc5,"adc5[nch]/I");
-	//end of initialize root tree to store hits
 
+	//end of initialize root tree to store hits
 	// loading the pedestals
 	TFile *pedestal_root=new TFile(pedestal_file.c_str(),"READ");
-
 	// start decode the raw file
 	vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
+	// read the .dat file
     FILE *Input_File_temp;
     Input_File_temp = fopen(GEMRawFileDecoder_Raw_File.Data(), "rb");
     if(Input_File_temp == 0) {
@@ -436,43 +436,116 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
             	map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp; //single events
                 SingleEvent_temp=GEMRawFileDecoder_SingleingestEventV5(Input_File_temp, GEMRawFileDecoder_Raw_File ,GEMInfor_Buffer_temp); // decoder the data
                 if(SingleEvent_temp.size()==1){
-
+                	// detID    planeID  strips  six time sample
+                	map<int, map<int, map<int, vector<int> > > > mmHit;    // used for buffer the final result for single events
 
                 	GEMEventDecoder *GEMSgEvntsDecode=new GEMEventDecoder(SingleEvent_temp);
                 	map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_CommonModesubtr=GEMSgEvntsDecode->eDCommonModeSubtr();
+                	//cout<<SingleEvent_CommonModesubtr.begin()->first<<endl;
                 	// finish common mode subtraction, ready apply zero subtraction
-                	map <int, map < int, map < int, map<int, map < int, int > > > > > ::iterator iter_events=SingleEvent_CommonModesubtr.begin();
-                	while(iter_events!=SingleEvent_CommonModesubtr.end()){
-                		map < int, map < int, map<int, map < int, int > > > >::iterator itter_mpd=iter_events->second.begin();
-                		while(itter_mpd!=iter_events->second.end()) {
-                			map < int, map<int, map < int, int > > >::iterator ittter_apvs=itter_mpd->second.begin();
-                			while(ittter_apvs!= itter_mpd->second.end()){   // loops on the apvs
-                				map<int, map < int, int > >::iterator itttter_tsample=ittter_apvs->second.begin();
-                				//loading the pedestal of the apvs
-                				TH1F *hMean=(TH1F*) pedestal_root->Get(Form("PedestalMean(offset)_mpd_%d_ch_%d",itter_mpd->first,ittter_apvs->first));
-                				TH1F *hRMS =(TH1F*) pedestal_root->Get(Form("PedestalRMS_mpd_%d_ch_%d",itter_mpd->first,ittter_apvs->first));
-                				while(itttter_tsample!=ittter_apvs->second.end()){
+                    map <int, map < int, map < int, map<int, map < int, int > > > > > ::iterator iter_events=SingleEvent_CommonModesubtr.begin();
+                    //cout<<"where am i "<<SingleEvent_CommonModesubtr.begin()->first<<endl;
+                    while(iter_events!=SingleEvent_CommonModesubtr.end()){
+                         map < int, map < int, map<int, map < int, int > > > >::iterator itter_mpd=iter_events->second.begin();
+                         while(itter_mpd!=iter_events->second.end()) {
+                               map < int, map<int, map < int, int > > >::iterator ittter_apvs=itter_mpd->second.begin();
+                               while(ittter_apvs!= itter_mpd->second.end()){   // loops on the apvs
+                            	   //loading the pedestal of the apvs
+                            	   TH1F *hMean=(TH1F*) pedestal_root->Get(Form("PedestalMean(offset)_mpd_%d_ch_%d",itter_mpd->first,ittter_apvs->first));
+                            	   TH1F *hRMS =(TH1F*) pedestal_root->Get(Form("PedestalRMS_mpd_%d_ch_%d",itter_mpd->first,ittter_apvs->first));
+                            	   map<int, map < int, int > >::iterator itttter_tsample=ittter_apvs->second.begin();
 
 
+                            	   // maybe there will be errors in special case
+                            	   for(unsigned int nstrips_counter=0; nstrips_counter < itttter_tsample->second.size();nstrips_counter++){
+                            		   //printf("%d\n",nstrips_counter);
+                            		   map<int, map < int, int > >::iterator itttter_tsample_temp=ittter_apvs->second.begin();
+                            		   float sum_temp=0;
+                            		   while(itttter_tsample_temp!=ittter_apvs->second.end()){
+                            			   sum_temp+=itttter_tsample_temp->second[nstrips_counter];
+                            			   //printf("%d,%f\n",ittter_apvs->second.size(),sum_temp);
+                            			   itttter_tsample_temp++;
+                            		   }
+                            		   sum_temp=sum_temp/((float)ittter_apvs->second.size())-hMean->GetBinContent(nstrips_counter+1);
+                            		   if(sum_temp>50*(hRMS->GetBinContent(nstrips_counter+1))){
+                            			   itttter_tsample_temp=ittter_apvs->second.begin();
+                            			   while(itttter_tsample_temp!=ittter_apvs->second.end()){ // six time samples
+                            				   // position tranverse
+                            				   int RstripNb=ChNb[nstrips_counter];  // transverse into pin address
+                            				   RstripNb=RstripNb+(127-2*RstripNb)*mMapping[itter_mpd->first][ittter_apvs->first][3];   // inverse transform
+                            				   int RstripPos=RstripNb+128*mMapping[itter_mpd->first][ittter_apvs->first][2];
+
+                            				   int detID=mMapping[itter_mpd->first][ittter_apvs->first][0];
+                            				   int planeID=mMapping[itter_mpd->first][ittter_apvs->first][1];
+
+                            				   mmHit[detID][planeID][RstripPos].push_back(itttter_tsample_temp->second[nstrips_counter]-hMean->GetBinContent(nstrips_counter+1));
+                            				   // here is a good position to add the zero subtraction display function
+
+                            				   //cout<<RstripPos<<endl;
+                            				   itttter_tsample_temp++;
+                            			   }
+
+                            		   }
+
+                            	   }
+                            	   ittter_apvs++;
+                                }
+                               itter_mpd++;
+                           }
+                          iter_events++;
+                       }
+
+                    // save the data in the root file
+                    int detid,planeid;
+                    int nstrip=0;
+                    // detid     planeid  strips  six time sample
+                    map<int, map<int, map<int, vector<int> > > >::iterator iter_detid=mmHit.begin();
+                    while(iter_detid!=mmHit.end()){
+                    	detid=iter_detid->first;
+                    	map<int, map<int, vector<int> > >::iterator itter_planeid=iter_detid->second.begin();
+                    	while(itter_planeid!=iter_detid->second.end()) { // single dimension
+                    		planeid=itter_planeid->first;
+
+                    		vector<int> stripVector;
+                    		//map<int,vector<int>> sDimension_temp=itter_planeid->second;
+                    		map<int,vector<int>>::iterator ittter_pos=itter_planeid->second.begin();
+                    		while(ittter_pos!=itter_planeid->second.end()){
+                    			stripVector.push_back(ittter_pos->first);
+                    			ittter_pos++;
+                    		}
+                    		sort(stripVector.begin(),stripVector.end());   // sort all the strips
+
+                    		for(int i=0; i < stripVector.size(); i++) {
+                    			Vstrip[nstrip]=stripVector[i];
+                    			adc0[nstrip]=mmHit[detid][planeid][stripVector[i]][0];
+                    			adc1[nstrip]=mmHit[detid][planeid][stripVector[i]][1];
+                    			adc2[nstrip]=mmHit[detid][planeid][stripVector[i]][2];
+
+                    			adc3[nstrip]=mmHit[detid][planeid][stripVector[i]][3];
+                    			adc4[nstrip]=mmHit[detid][planeid][stripVector[i]][4];
+                    			adc5[nstrip]=mmHit[detid][planeid][stripVector[i]][5];
+                    			VdetID[nstrip]=detid;
+                    			VplaneID[nstrip]=planeid;
+                    			nstrip++;
+                    		}
 
 
-
-
-                					itttter_tsample++;
-                				}
-                				ittter_apvs++;
-                			}
-                			itter_mpd++;
-                		}
-                		iter_events++;
-                	}
+                    		itter_planeid++;
+                    	}
+                    	iter_detid++;
+                    }
+                    nch=nstrip;
+                    EvtID=iter_events->first;
+                    if(nch!=0) {
+                    	Hit->Fill();
+                    }
 
                 }
                 else{
                 printf("[%s(line%d)] unrecognized data package detected, ignore",__FUNCTION__, __LINE__);
                 continue;
                 }
-            }
+            }// end of loop on single events
             printf("This is the end of the file\n");
         }
         else {
@@ -485,7 +558,211 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
         exit(-1);
     }
 
+    pedestal_root->Close(); // close the root file
+
+    TFile *Hit_rootfile=new TFile(output_file.c_str(),"RECREATE");
+    Hit->Write();
+    Hit_rootfile->Write();
+    Hit_rootfile->Close();
+
+    delete Hit_rootfile;
+    delete[] Vstrip;
+    delete[] VdetID;
+    delete[] VplaneID;
+    delete[] adc0 ;
+    delete[] adc1 ;
+    delete[] adc2 ;
+    delete[] adc3 ;
+    delete[] adc4 ;
+    delete[] adc5 ;
 }
+
+void GEMRawFileDecoder::GEMRawFileDecoder_ZeroSubtractionDisplay(string pedestal_file,string output_file, int Entries_input) {
+
+	// reading mapping file test
+	ifstream filestream("Mapping/temp_Mapping.cfg");
+	string  line;
+	int Mapping_mpdId,Mapping_ADCId,Mapping_I2C,Mapping_GEMId,Mapping_Xis,Mapping_Pos,Mapping_Invert;
+	map<int,map<int,vector<int> > > mMapping;
+	if(!filestream){
+		printf("[ERROR]::  %s error when try to open the mapping file\n",__FUNCTION__);
+		exit(-1);
+	   }else {
+	        printf("[INFOR]::  %s reading the mapping file\n",__FUNCTION__);
+	}
+	cout<<"MPDID"<<"	GEMID"<<"	Xis"<<"	ADCID"<<"	I2C"<<"	Pos"<<"	Invert"<<endl;
+	while(getline(filestream,line)){   // reading the mapping line by line
+		line.erase(std::remove_if(line.begin(),line.end(), ::isspace),line.end());   // remove the space in the string
+		if(line.find("#")==0)continue;
+		char *tokens=strtok((char *)line.data(),",");// token one string before ,
+		if(tokens!=NULL) {
+			cout<<tokens<<"	";Mapping_mpdId=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_GEMId=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_Xis=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_ADCId=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_I2C=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_Pos=atoi(tokens);
+			tokens = strtok(NULL, " ,");cout<<tokens<<"	";Mapping_Invert=atoi(tokens);
+			mMapping[Mapping_mpdId][Mapping_I2C].push_back(Mapping_GEMId);//0
+			mMapping[Mapping_mpdId][Mapping_I2C].push_back(Mapping_Xis);//1
+			mMapping[Mapping_mpdId][Mapping_I2C].push_back(Mapping_Pos);//2
+			mMapping[Mapping_mpdId][Mapping_I2C].push_back(Mapping_Invert);//3
+		}
+		cout<<endl;
+	}
+	filestream.close();
+    //finish loading the mapping
+	TCanvas *Canvas_display=new TCanvas("ZeroSubtraction","ZeroSubtraction",1000,1000);
+	Canvas_display->Divide(2,2);
+
+
+
+	// loading the pedestals
+	TFile *pedestal_root=new TFile(pedestal_file.c_str(),"READ");
+	// start decode the raw file
+	vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
+	// read the .dat file
+    FILE *Input_File_temp;
+    Input_File_temp = fopen(GEMRawFileDecoder_Raw_File.Data(), "rb");
+    if(Input_File_temp == 0) {
+        printf("[ERROR]:: %s Error in loading the raw data file, maybe the raw data \"%s\"file does's exist\n",__FUNCTION__, GEMRawFileDecoder_Raw_File.Data());
+        exit(-1);
+    }
+    else {
+        printf("[RUN INFOR]:: %s loading file %s \n", __FUNCTION__, GEMRawFileDecoder_Raw_File.Data());
+    };
+
+    uint32_t fileID_temp;
+    uint32_t fileVersion_temp;
+    uint32_t fNumberSample_temp;
+    uint32_t fNumberAPV_temp;
+    // ev    MPD       APV   nstrips Sigma
+    map<int,map<int,map<int,map<int,int> > > > Sigma_all;
+    fread(&fileID_temp, sizeof(uint32_t),1,Input_File_temp); // read the fileID
+    if(fileID_temp == BINARYFILE_ID){      // mactch the file ID
+        fread(&fileVersion_temp,sizeof(uint32_t),1,Input_File_temp);   // load the file version
+        fread(&fNumberSample_temp,sizeof(uint32_t),1,Input_File_temp);
+        fread(&fNumberAPV_temp,sizeof(uint32_t),1,Input_File_temp);
+        if(fileVersion_temp == 5) {
+            GEMInfor_Buffer_temp=GEMRawFileDecoder_ingestFileHeader(Input_File_temp, (int)fileVersion_temp, GEMInfor_Buffer_temp); // decoder the file header
+
+            // load the main data package one event by one event
+            while(feof(Input_File_temp)==0) {
+
+            	map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_temp; //single events
+                SingleEvent_temp=GEMRawFileDecoder_SingleingestEventV5(Input_File_temp, GEMRawFileDecoder_Raw_File ,GEMInfor_Buffer_temp); // decoder the data
+
+                if(SingleEvent_temp.size()==1){
+
+                	TH1F* ZeroSubtraction_histo_x=new TH1F("ZeroSubtraction_histo_x","ZeroSubtraction_histo_x",500,0,500);
+                	TH1F* ZeroSubtraction_histo_y=new TH1F("ZeroSubtraction_histo_y","ZeroSubtraction_histo_y",500,0,500);
+                	TH1F* RawData_histo_x=new TH1F("RawData_histo_x","RawData_histo_x",500,0,500);
+                	TH1F* RawData_histo_y=new TH1F("RawData_histo_y","RawData_histo_y",500,0,500);
+
+                	// detID    planeID  strips  six time sample
+                	map<int, map<int, map<int, vector<int> > > > mmHit;    // used for buffer the final result for single events
+                	// detID    planeID six time sample strips
+                	map<int, map<int, map<int, map<int,int> > > > Test_map;
+                	// detID    planeID  strips
+                	map<int, map<int, map<int, int > > > sZeroSubtration;
+                	map<int, map<int, map<int, int > > > sRawData;
+
+
+                	GEMEventDecoder *GEMSgEvntsDecode=new GEMEventDecoder(SingleEvent_temp);
+                	map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_CommonModesubtr=GEMSgEvntsDecode->eDCommonModeSubtr();
+                	// finish common mode subtraction, ready apply zero subtraction
+                    map <int, map < int, map < int, map<int, map < int, int > > > > > ::iterator iter_events=SingleEvent_CommonModesubtr.begin();
+                    //cout<<"where am i "<<SingleEvent_CommonModesubtr.begin()->first<<endl;
+                    while(iter_events!=SingleEvent_CommonModesubtr.end()){
+                         map < int, map < int, map<int, map < int, int > > > >::iterator itter_mpd=iter_events->second.begin();
+                         while(itter_mpd!=iter_events->second.end()) {
+                               map < int, map<int, map < int, int > > >::iterator ittter_apvs=itter_mpd->second.begin();
+                               while(ittter_apvs!= itter_mpd->second.end()){   // loops on the apvs
+                            	   //loading the pedestal of the apvs
+                            	   TH1F *hMean=(TH1F*) pedestal_root->Get(Form("PedestalMean(offset)_mpd_%d_ch_%d",itter_mpd->first,ittter_apvs->first));
+                            	   TH1F *hRMS =(TH1F*) pedestal_root->Get(Form("PedestalRMS_mpd_%d_ch_%d",itter_mpd->first,ittter_apvs->first));
+                            	   map<int, map < int, int > >::iterator itttter_tsample=ittter_apvs->second.begin();
+                            	   // maybe there will be errors in special case
+
+                            	   map<int,int> sRaw_strips_buffer;
+                            	   map<int,int> sZeroSubtr_strips_buffer;
+                            	   for(unsigned int nstrips_counter=0; nstrips_counter < itttter_tsample->second.size();nstrips_counter++){
+                            		   map<int, map < int, int > >::iterator itttter_tsample_temp=ittter_apvs->second.begin();
+                            		   float sum_temp=0;
+                            		   float sum_raw_temp=0;
+                            		   while(itttter_tsample_temp!=ittter_apvs->second.end()){
+                            			   sum_temp+=itttter_tsample_temp->second[nstrips_counter];
+                            			   sum_raw_temp+=SingleEvent_temp[iter_events->first][itter_mpd->first][ittter_apvs->first][itttter_tsample_temp->first][nstrips_counter];
+                            			   itttter_tsample_temp++;
+                            		   }
+                            		   sum_temp=sum_temp/((float)ittter_apvs->second.size());
+                            		   sum_raw_temp=sum_raw_temp/((float)ittter_apvs->second.size());
+                        			   // position tranverse
+                        			   int RstripNb=ChNb[nstrips_counter];  // transverse into pin address
+                        			   RstripNb=RstripNb+(127-2*RstripNb)*mMapping[itter_mpd->first][ittter_apvs->first][3];   // inverse transform
+                        			   int RstripPos=RstripNb+128*mMapping[itter_mpd->first][ittter_apvs->first][2];
+                        			   int detID=mMapping[itter_mpd->first][ittter_apvs->first][0];
+                        			   int planeID=mMapping[itter_mpd->first][ittter_apvs->first][1];
+                            		   if(planeID==0){
+                            			   RawData_histo_x->Fill(RstripPos,sum_raw_temp);
+                            		   }
+                            		   else
+                            		   {
+                            			   RawData_histo_y->Fill(RstripPos,sum_raw_temp);
+                            		   }
+                            		   if(sum_temp-hMean->GetBinContent(nstrips_counter+1)>5*(hRMS->GetBinContent(nstrips_counter+1))){
+                            			   if(planeID==0) {
+                            				   ZeroSubtraction_histo_x->Fill(RstripPos,sum_temp-hMean->GetBinContent(nstrips_counter+1));
+                            			   }else
+                            			   {
+                            				   ZeroSubtraction_histo_y->Fill(RstripPos,sum_temp-hMean->GetBinContent(nstrips_counter+1));
+                            			   }
+                            		   }
+                            	   }
+                            	   ittter_apvs++;
+                                }
+                               itter_mpd++;
+                           }
+                          iter_events++;
+                       }
+
+                    Canvas_display->cd(1);
+                    RawData_histo_x->Draw();
+                    Canvas_display->cd(3);
+                    ZeroSubtraction_histo_x->Draw();
+                    Canvas_display->cd(2);
+                    RawData_histo_y->Draw();
+                    Canvas_display->cd(4);
+                    ZeroSubtraction_histo_y->Draw();
+                    Canvas_display->Update();
+                    Canvas_display->Modified();
+                    getchar();
+                    delete RawData_histo_x;
+                    delete ZeroSubtraction_histo_x;
+                    delete RawData_histo_y;
+                    delete ZeroSubtraction_histo_y;
+                }
+                else{
+                printf("[%s(line%d)] unrecognized data package detected, ignore",__FUNCTION__, __LINE__);
+                continue;
+                }
+
+            }// end of loop on single events
+            printf("This is the end of the file\n");
+        }
+        else {
+            printf("[ERROR]:: _%s Unsupported file Version\n",__FUNCTION__);
+            exit(-1);
+        };
+    }
+    else {
+        printf("[ERROR]:: %s Unsupport fileID",__FUNCTION__);
+        exit(-1);
+    }
+
+    pedestal_root->Close(); // close the root file
+}
+
 vector<GEMInfor> GEMRawFileDecoder::GEMRawFileDecoder_Run( vector<GEMInfor> GEMInfor_Buffer_Input) {
 
 	vector<GEMInfor> GEMInfor_Buffer_temp;       // used for buffer the data temporary
@@ -1043,7 +1320,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp, map< 
 // test functions
 void GEMRawFileDecoder::GEMRawFileDecoder_TestFunction(){
 	vector<GEMInfor> MPD_infor_test;
-	GEMRawFileDecoder_HistoDecoder("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/test.root","test_out.root",-1);
+	GEMRawFileDecoder_ZeroSubtractionDisplay("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/test.root","test_out.root",-1);
 	//GEMRawFileDecoder_PedestalDecoder("test.root",-1);
 	//GEMRawFileDecoder_RawDisplay();
 	//GEMRawFileDecoder_Run(MPD_infor_test);

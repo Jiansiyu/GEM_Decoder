@@ -111,16 +111,13 @@ std::map <int, std::map < int, std::map < int, std::map<int, std::map < int, int
 						}
 				}
 				float CommonMode_temp=Commonmode_histo_temp->GetMean();
-				//cout<<(int)CommonMode_temp<<endl;
 				itttter_nstrips=ittter_tsamples->second.begin();
 				std::map<int,int> sgSample_buffer;
 				while(itttter_nstrips!=ittter_tsamples->second.end()) {
 					sgSample_buffer.insert(make_pair(itttter_nstrips->first,itttter_nstrips->second-(int)CommonMode_temp));
-					//printf("nstrips=%d,adc=%d\n",itttter_nstrips->first,itttter_nstrips->second-(int)CommonMode_temp);
 					itttter_nstrips++;
 				}
 				tSamples_buffer.insert(make_pair(ittter_tsamples->first,sgSample_buffer));
-				//printf("first bin maybe =%d, last bin =%d\n",background_level0->GetYaxis()->GetFirst(),background_level0->GetXaxis()->GetLast());
 				delete Commonmode_histo_temp;
 				delete background_level0;
 				delete SingleTSample_peaksch;
@@ -134,8 +131,7 @@ std::map <int, std::map < int, std::map < int, std::map<int, std::map < int, int
 		mpd_buffer.insert(make_pair(iter_mpd->first,APVs_buffer));
 		iter_mpd++;
 	}
-	//sEvent_Return.insert(make_pair(SingleEvts.begin()->first,mpd_buffer));
-
+	sEvent_Return.insert(make_pair(SingleEvts.begin()->first,mpd_buffer));
 
 /*	// check function
 	iter_mpd=sEvent_Return.begin()->second.begin();
@@ -354,7 +350,7 @@ std::map<int, std::map <int, std::map <int, std::map < int,  int > > > > GEMEven
 				    }
 				// if all the (maybe 6) timesamples have effective data
 				if(Sigma_histo_temp->GetEntries()==itter_APVs->second.size()){
-					Ch_sigma_buffer_temp.insert(make_pair(i,Sigma_histo_temp->GetRMS()));
+					Ch_sigma_buffer_temp.insert(make_pair(i,Sigma_histo_temp->GetMean()));
 				}
 				delete Sigma_histo_temp;
 			}
