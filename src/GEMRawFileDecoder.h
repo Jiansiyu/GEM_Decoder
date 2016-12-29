@@ -68,6 +68,8 @@ private:
 // private functions
 private:
 	int GEMRawFileDecoder_DataCheck(vector<GEMInfor> GEMInfor_Buffer_Input);                // check the number of Datas, varify it is matching the configuration
+	map<int, map<int, map<int, vector<int> > > >GEMRawFileDecoder_Smooth(std::string options,map<int, map<int, map<int, vector<int> > > > Input);
+	TH1F* GEMRawFileDecoder_Smooth(std::string options,TH1F*);
 
 // files related IDs
 private:

@@ -157,9 +157,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_RawDisplay(int Entries_input) {
 		     }
 			Canvas_Raw->Modified();
 			Canvas_Raw->Update();
-			string a ;
-			getline(cin,a);
-
+			getchar();
 			for(int i =0; i < NumberofAPV; i++)
 				delete sEvent_histo[i];
 			}
@@ -442,7 +440,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
                 if(SingleEvent_temp.size()==1){
                 	// detID    planeID  strips  six time sample
                 	map<int, map<int, map<int, vector<int> > > > mmHit;    // used for buffer the final result for single events
-
+                	map<int, map<int, map<int, vector<int> > > > mmHit_temp;    // used for buffer the final result for single events
                 	GEMEventDecoder *GEMSgEvntsDecode=new GEMEventDecoder(SingleEvent_temp);
                 	map <int, map < int, map < int, map<int, map < int, int > > > > > SingleEvent_CommonModesubtr=GEMSgEvntsDecode->eDCommonModeSubtr();
                 	//cout<<SingleEvent_CommonModesubtr.begin()->first<<endl;
@@ -481,7 +479,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
                             				   int detID=mMapping[itter_mpd->first][ittter_apvs->first][0];
                             				   int planeID=mMapping[itter_mpd->first][ittter_apvs->first][1];
 
-                            				   mmHit[detID][planeID][RstripPos].push_back(itttter_tsample_temp->second[nstrips_counter]-hMean->GetBinContent(nstrips_counter+1));
+                            				   mmHit_temp[detID][planeID][RstripPos].push_back(itttter_tsample_temp->second[nstrips_counter]-hMean->GetBinContent(nstrips_counter+1));
                             				   //cout<<RstripPos<<endl;
                             				   itttter_tsample_temp++;
                             			   }
@@ -495,7 +493,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
                            }
                           iter_events++;
                        }
-
+                    mmHit=GEMRawFileDecoder_Smooth("average",mmHit_temp);
                     // save the data in the root file
                     int detid,planeid;
                     int nstrip=0;
@@ -518,6 +516,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_HistoDecoder(string pedestal_file,stri
 
                     		for(int i=0; i < stripVector.size(); i++) {
                     			Vstrip[nstrip]=stripVector[i];
+
                     			adc0[nstrip]=mmHit[detid][planeid][stripVector[i]][0];
                     			adc1[nstrip]=mmHit[detid][planeid][stripVector[i]][1];
                     			adc2[nstrip]=mmHit[detid][planeid][stripVector[i]][2];
@@ -697,6 +696,7 @@ void GEMRawFileDecoder::GEMRawFileDecoder_ZeroSubtractionDisplay(string pedestal
                             			   itttter_tsample_temp++;
                             		   }
                             		   sum_temp=sum_temp/((float)ittter_apvs->second.size());
+
                             		   sum_raw_temp=sum_raw_temp/((float)ittter_apvs->second.size());
                         			   // position tranverse
                         			   int RstripNb=ChNb[nstrips_counter];  // transverse into pin address
@@ -1317,7 +1317,63 @@ void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp, map< 
 		iter_mpd++;
 	}
 }
+map<int, map<int, map<int, vector<int> > > >GEMRawFileDecoder::GEMRawFileDecoder_Smooth(std::string options,map<int, map<int, map<int, vector<int> > > > Input){
+	unsigned int nTsamples=Input.begin()->second.begin()->second.begin()->second.size();
+	//cout<<""<<nTsamples<<endl;
+	// detID    planeID  strips  six time sample
+	map<int, map<int, map<int, vector<int> > > > return_result;
+	map<int, map<int, map<int, vector<int> > > >::iterator iter_detid=Input.begin();
+	int strips_number_buffer=0;
+	while(iter_detid!=Input.end()){
+		map<int, map<int, vector<int> > >::iterator itter_planeid=iter_detid->second.begin();
+		while(itter_planeid!=iter_detid->second.end()){
+			map<int, vector<int> >::iterator ittter_nstrip=itter_planeid->second.begin();
+			unsigned int maximum_stripnumber=0;
+			while(ittter_nstrip!=itter_planeid->second.end()){
+				if(ittter_nstrip->first>maximum_stripnumber)maximum_stripnumber=ittter_nstrip->first;
+				//cout<<"Real strips"<< ittter_nstrip->first<<endl;
+				ittter_nstrip++;
+			}
+			cout<<"Maximum strips "<<maximum_stripnumber<<endl;
+			for(unsigned int tsample_counter=0; tsample_counter<nTsamples;tsample_counter++){
+				for(unsigned int strips_counter=0;strips_counter<=maximum_stripnumber;strips_counter++){
+					if(itter_planeid->second.find(strips_counter)!=itter_planeid->second.end()){
+						return_result[iter_detid->first][itter_planeid->first][strips_counter].push_back(itter_planeid->second[strips_counter][tsample_counter]);
+					}else{
+						if((itter_planeid->second.find(strips_counter-1)!=itter_planeid->second.end())&&(itter_planeid->second.find(strips_counter+1)!=itter_planeid->second.end())){
+							return_result[iter_detid->first][itter_planeid->first][strips_counter].push_back((itter_planeid->second[strips_counter+1][tsample_counter]+itter_planeid->second[strips_counter-1][tsample_counter])*0.5);
+							cout<<"make up strips  "<<strips_counter<<"  Tsample "<<tsample_counter<<endl;
+						}
+					}
+				}
 
+			}
+			//cout<<"how large  "<<
+//			for(unsigned int tsample_counter=0; tsample_counter<nTsamples;tsample_counter++){
+//				for(unsigned int strips_counter=0;strips_counter<=maximum_stripnumber;strips_counter++){
+//
+//					if(Input[iter_detid->first][itter_planeid->first][strips_counter][tsample_counter]!=NULL){
+//						cout<<"nonzeor  "<<strips_counter    <<"tsample  "<<tsample_counter<<endl;
+//						return_result[iter_detid->first][itter_planeid->first][strips_counter].push_back(Input[iter_detid->first][itter_planeid->first][strips_counter][tsample_counter]);
+//					}else{
+//						cout<<"lol  "<<strips_counter<<"  tsample  "<<tsample_counter<<endl;
+//
+//						if((Input[iter_detid->first][itter_planeid->first][strips_counter+1][tsample_counter]!=NULL)&&(Input[iter_detid->first][itter_planeid->first][strips_counter-1][tsample_counter]!=NULL)) {
+//							cout<<" find you "<<endl;
+//							return_result[iter_detid->first][itter_planeid->first][strips_counter].push_back((Input[iter_detid->first][itter_planeid->first][strips_counter+1][tsample_counter]+Input[iter_detid->first][itter_planeid->first][strips_counter-1][tsample_counter])*0.5);
+//						}
+//					}
+//				}
+//			}
+
+			itter_planeid++;
+		}
+
+		iter_detid++;
+	}
+	//getchar();
+	return return_result;
+};
 // test functions
 void GEMRawFileDecoder::GEMRawFileDecoder_TestFunction(){
 	vector<GEMInfor> MPD_infor_test;
