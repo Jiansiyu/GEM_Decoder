@@ -55,6 +55,7 @@ static const struct option long_options[]={
 		{"help", no_argument, 0, 'h'},
 		{"mode", required_argument, 0, 'm'},
         {"output",required_argument,0,'o'},
+        {"pedestal",required_argument,0,'p'},
         {"input",required_argument,0,'i'},
         {"version", no_argument, 0, 'v'},
         {0, 0, 0, 0}
@@ -65,15 +66,15 @@ int main(int argc, char **argv)
 		//
 		TApplication theApp("App", NULL, NULL);   //Root application framework
 
-		//int ui_input=0;
-		//int option_index = 0;
-		/*
+		int ui_input=0;
+		int option_index = 0;
+
 		if(argc<=1) {
 			printf("./GEM_Analysis -[option] [file or command]\n");
 			exit(0);
 		}
 		globalViabArgs_t globalViabArgs_temp;
-		ui_input=getopt_long(argc, argv, "vm:o:i:h", long_options, &option_index);
+		ui_input=getopt_long(argc, argv, "vm:o:i:p:h", long_options, &option_index);
 		while(ui_input!=-1) {
 			switch (ui_input) {
 				case 'h':
@@ -102,15 +103,14 @@ int main(int argc, char **argv)
 			};
 			ui_input=getopt_long(argc,argv,"vm:o:i:h", long_options, &option_index);
 		}
-
-*/
+		/*
 		for (int i =2515; i <2568;i++){
 			TTree test_tree;
 			GEMRawFileDecoder *GEMRawFileDecoder_run=new GEMRawFileDecoder(Form("/media/newdriver/data/DATA\ back_up/APV_data_weizhengli/IHEP_ciae_image_x_tube/test_%d.dat",i), &test_tree);
 			GEMRawFileDecoder_run->GEMRawFileDecoder_PedestalDecoder(Form("Pedestal_%d.root",i),1,-1);
 			GEMRawFileDecoder_run->GEMRawFileDecoder_HistoDecoder(Form("Pedestal_%d.root",i),Form("/home/newdriver/Research/GEM_Analsys_CIAE/Result/ciae/decoder/test_result_%d.root",i),-1);
 			delete GEMRawFileDecoder_run;
-		}
+		}*/
 
 		return 0;
 }

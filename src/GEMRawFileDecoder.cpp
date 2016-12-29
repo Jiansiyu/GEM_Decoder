@@ -1245,19 +1245,14 @@ map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDeco
 						printf("[ERROR]:: %s data number error",__FUNCTION__);
 					    }
 					// finish data saving
-
 					break;
 				}
-
 				default:
 					printf("[ERROR]:: Error in decoding raw data\n");
 				 }
-
 			}
 			while((feof(file_input)==0)&&(Run_Ctrl_EndApvEndOfBlock==0));     // the end of one event
-
 		};   //APV block Ended all
-
 		// End of Evnts
 		if((Data_temp&0xF0000000)== 0xE0000000) {
 
@@ -1289,14 +1284,12 @@ map <int, map < int, map < int, map<int, map < int, int > > > > > GEMRawFileDeco
 	return Single_Evnts_Return;
 	//printf("[%s-line%d] end of the file, maybe this is cash happen\n", __FUNCTION__,__LINE__);
 };
-
 ////                                                                           MPDID, APVID, TimesampleID, StripsID, ADC value
 void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp, map< int , map < int , map < int, map< int,int > > > >  rdSingleEvent_Input) {
 	GEMR_ApvStrData.EventID=EventID_index_temp;
 	map< int , map < int , map < int, map< int,int > > > >::iterator iter_mpd=rdSingleEvent_Input.begin();
 	while(iter_mpd!=rdSingleEvent_Input.end()){    // loop on the MPD
 		GEMR_ApvStrData.MPDID=iter_mpd->first;
-
 		map < int , map < int, map< int,int > > > ::iterator itter_apv=iter_mpd->second.begin();   // loop on all the APV that attched on this mpd
 		while(itter_apv!=iter_mpd->second.end()){
 			GEMR_ApvStrData.APVID=itter_apv->first;
@@ -1319,8 +1312,6 @@ void GEMRawFileDecoder::GEMRawFileDecoder_TreeSave(int EventID_index_temp, map< 
 }
 map<int, map<int, map<int, vector<int> > > >GEMRawFileDecoder::GEMRawFileDecoder_Smooth(std::string options,map<int, map<int, map<int, vector<int> > > > Input){
 	unsigned int nTsamples=Input.begin()->second.begin()->second.begin()->second.size();
-	//cout<<""<<nTsamples<<endl;
-	// detID    planeID  strips  six time sample
 	map<int, map<int, map<int, vector<int> > > > return_result;
 	map<int, map<int, map<int, vector<int> > > >::iterator iter_detid=Input.begin();
 	int strips_number_buffer=0;
@@ -1331,7 +1322,6 @@ map<int, map<int, map<int, vector<int> > > >GEMRawFileDecoder::GEMRawFileDecoder
 			unsigned int maximum_stripnumber=0;
 			while(ittter_nstrip!=itter_planeid->second.end()){
 				if(ittter_nstrip->first>maximum_stripnumber)maximum_stripnumber=ittter_nstrip->first;
-				//cout<<"Real strips"<< ittter_nstrip->first<<endl;
 				ittter_nstrip++;
 			}
 			cout<<"Maximum strips "<<maximum_stripnumber<<endl;
@@ -1346,39 +1336,14 @@ map<int, map<int, map<int, vector<int> > > >GEMRawFileDecoder::GEMRawFileDecoder
 						}
 					}
 				}
-
 			}
-			//cout<<"how large  "<<
-//			for(unsigned int tsample_counter=0; tsample_counter<nTsamples;tsample_counter++){
-//				for(unsigned int strips_counter=0;strips_counter<=maximum_stripnumber;strips_counter++){
-//
-//					if(Input[iter_detid->first][itter_planeid->first][strips_counter][tsample_counter]!=NULL){
-//						cout<<"nonzeor  "<<strips_counter    <<"tsample  "<<tsample_counter<<endl;
-//						return_result[iter_detid->first][itter_planeid->first][strips_counter].push_back(Input[iter_detid->first][itter_planeid->first][strips_counter][tsample_counter]);
-//					}else{
-//						cout<<"lol  "<<strips_counter<<"  tsample  "<<tsample_counter<<endl;
-//
-//						if((Input[iter_detid->first][itter_planeid->first][strips_counter+1][tsample_counter]!=NULL)&&(Input[iter_detid->first][itter_planeid->first][strips_counter-1][tsample_counter]!=NULL)) {
-//							cout<<" find you "<<endl;
-//							return_result[iter_detid->first][itter_planeid->first][strips_counter].push_back((Input[iter_detid->first][itter_planeid->first][strips_counter+1][tsample_counter]+Input[iter_detid->first][itter_planeid->first][strips_counter-1][tsample_counter])*0.5);
-//						}
-//					}
-//				}
-//			}
-
 			itter_planeid++;
 		}
-
 		iter_detid++;
 	}
-	//getchar();
 	return return_result;
 };
 // test functions
 void GEMRawFileDecoder::GEMRawFileDecoder_TestFunction(){
 	vector<GEMInfor> MPD_infor_test;
-	//GEMRawFileDecoder_ZeroSubtractionDisplay("/home/newdriver/Research/Eclipse_workspace/GEM_Analysis/test.root","test_out.root",-1);
-	//GEMRawFileDecoder_PedestalDecoder("test.root",-1);
-	//GEMRawFileDecoder_RawDisplay();
-	//GEMRawFileDecoder_Run(MPD_infor_test);
 };
