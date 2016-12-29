@@ -8,7 +8,8 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include src/subdir.mk
+-include decoder/subdir.mk
+-include analysis/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -44,7 +45,7 @@ all: GEM_Analysis
 GEM_Analysis: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ $(OBJS) $(USER_OBJS) $(LIBS) -L"/home/newdriver/Source/ROOT_CERN/root_v5.34.36/lib" -pthread -lm -ldl -lSpectrum -Xlinker `$(ROOTSYS)/bin/root-config --libs --glibs --cflags --ldflags --auxlibs --auxcflags` -o "GEM_Analysis"
+	g++ $(OBJS) $(USER_OBJS) $(LIBS) -L"/home/newdriver/Source/ROOT_CERN/root_v5.34.36/lib" -pthread -lm -ldl -lSpectrum  -lMinuit -Xlinker `$(ROOTSYS)/bin/root-config --libs --glibs --cflags --ldflags --auxlibs --auxcflags` -o "GEM_Analysis"
 	@echo 'Finished building target: $@'
 	@echo ' '
 
